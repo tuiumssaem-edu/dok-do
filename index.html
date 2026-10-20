@@ -1,0 +1,2467 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>독도 보물섬 탐험 수첩 & AI 작사 스튜디오</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Jua (제목/포인트용), Pretendard/Noto Sans KR (본문용) -->
+    <link href="https://fonts.googleapis.com/css2?family=Jua&family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --mint-bg: #dcfce7;
+            --mint-grid: #bbf7d0;
+            --primary-teal: #0d9488;
+            --ocean-blue: #0284c7;
+            --note-yellow: #fef9c3;
+        }
+
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+            background-color: #e6f7f2;
+            /* 산뜻한 민트색 모눈종이 패턴 */
+            background-image: 
+                linear-gradient(to right, rgba(255, 255, 255, 0.85) 2px, transparent 2px),
+                linear-gradient(to bottom, rgba(255, 255, 255, 0.85) 2px, transparent 2px),
+                linear-gradient(to right, rgba(16, 185, 129, 0.08) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(16, 185, 129, 0.08) 1px, transparent 1px);
+            background-size: 60px 60px, 60px 60px, 15px 15px, 15px 15px;
+            background-attachment: fixed;
+            color: #1e293b;
+            overflow-x: hidden;
+        }
+
+        .font-jua {
+            font-family: 'Jua', sans-serif;
+        }
+
+        /* 다이어리/노트 카드 스타일 */
+        .note-card {
+            background: #ffffff;
+            border: 3px solid #1e293b;
+            box-shadow: 6px 6px 0px #0f766e;
+            border-radius: 1.25rem;
+            transition: all 0.2s ease;
+        }
+
+        .note-card-sm {
+            background: #ffffff;
+            border: 2.5px solid #1e293b;
+            box-shadow: 4px 4px 0px #0f766e;
+            border-radius: 1rem;
+        }
+
+        .retro-btn {
+            border: 2.5px solid #1e293b;
+            box-shadow: 3px 3px 0px #1e293b;
+            transition: all 0.15s ease;
+        }
+        .retro-btn:hover {
+            transform: translate(-1px, -1px);
+            box-shadow: 4px 4px 0px #1e293b;
+        }
+        .retro-btn:active {
+            transform: translate(2px, 2px);
+            box-shadow: 1px 1px 0px #1e293b;
+        }
+
+        /* 마스킹 테이프 장식 */
+        .masking-tape {
+            position: absolute;
+            top: -12px;
+            left: 50%;
+            transform: translateX(-50%) rotate(-2deg);
+            width: 110px;
+            height: 26px;
+            background-color: rgba(253, 224, 71, 0.85);
+            border: 1.5px dashed rgba(161, 98, 7, 0.4);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.08);
+            z-index: 10;
+        }
+
+        /* 3D 플립 카드 효과 */
+        .perspective-1000 {
+            perspective: 1000px;
+        }
+        .flip-card-inner {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            transition: transform 0.6s cubic-bezier(0.4, 0.2, 0.2, 1);
+            transform-style: preserve-3d;
+        }
+        .flip-card.flipped .flip-card-inner {
+            transform: rotateY(180deg);
+        }
+        .flip-card-front, .flip-card-back {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            -webkit-backface-visibility: hidden;
+            border-radius: 1rem;
+        }
+        .flip-card-back {
+            transform: rotateY(180deg);
+        }
+
+        /* 맵 핫스팟 스타일 (반짝임/흔들림 완전 제거, 명확한 클릭 영역 보장) */
+        .hotspot-pin {
+            cursor: pointer;
+            pointer-events: all;
+        }
+        .hotspot-hit-area {
+            fill: transparent;
+            pointer-events: all;
+            cursor: pointer;
+        }
+
+        /* 바다 물결 애니메이션 (마우스 이벤트 방해 금지) */
+        @keyframes waveMove {
+            0% { transform: translateX(0); }
+            50% { transform: translateX(-15px); }
+            100% { transform: translateX(0); }
+        }
+        .wave-anim {
+            animation: waveMove 4s infinite ease-in-out;
+            pointer-events: none;
+        }
+
+        /* 스탬프 획득 팝 효과 */
+        @keyframes stampBounce {
+            0% { transform: scale(2.5) rotate(-25deg); opacity: 0; }
+            60% { transform: scale(0.9) rotate(5deg); opacity: 1; }
+            80% { transform: scale(1.05) rotate(-3deg); }
+            100% { transform: scale(1) rotate(0deg); opacity: 1; }
+        }
+        .stamp-active {
+            animation: stampBounce 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+
+        /* 인쇄 모드 설정 */
+        @media print {
+            body * {
+                visibility: hidden;
+            }
+            #printable-certificate, #printable-certificate * {
+                visibility: visible;
+            }
+            #printable-certificate {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+                box-shadow: none !important;
+                border: 2px solid #000 !important;
+            }
+            .no-print {
+                display: none !important;
+            }
+        }
+    </style>
+</head>
+<body class="min-h-screen pb-16 selection:bg-teal-200">
+
+    <!-- 상단 고정 헤더 & 스탬프 대시보드 -->
+    <header class="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b-4 border-slate-800 shadow-md px-3 py-2.5 md:px-6">
+        <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-3">
+            <!-- 로고 & 타이틀 -->
+            <div class="flex items-center gap-3">
+                <div class="w-11 h-11 rounded-xl bg-teal-500 border-2 border-slate-800 flex items-center justify-center shadow-[2px_2px_0px_#1e293b] text-2xl">
+                    🏝️
+                </div>
+                <div>
+                    <div class="flex items-center gap-2">
+                        <span class="bg-amber-300 text-slate-900 text-xs font-extrabold px-2 py-0.5 rounded-md border border-slate-800">10월 25일 독도의 날</span>
+                        <span class="text-xs font-bold text-teal-700 hidden sm:inline">1차시 키워드 탐험 & 2차시 AI 작사 연계</span>
+                    </div>
+                    <h1 class="font-jua text-xl md:text-2xl text-slate-900 tracking-wide mt-0.5">독도 보물섬 탐험 수첩</h1>
+                </div>
+            </div>
+
+            <!-- 중앙 네비게이션 탭 -->
+            <nav class="flex items-center gap-1.5 sm:gap-2 order-3 lg:order-2 w-full lg:w-auto justify-center bg-teal-50 p-1.5 rounded-xl border-2 border-slate-800">
+                <button onclick="switchTab('tab1')" id="tab-btn-tab1" class="retro-btn px-3 py-1.5 rounded-lg font-jua text-sm sm:text-base bg-teal-500 text-white flex items-center gap-1.5 flex-1 lg:flex-initial justify-center">
+                    <span>🗺️</span> <span>1. 독도 도감</span>
+                </button>
+                <button onclick="switchTab('tab2')" id="tab-btn-tab2" class="retro-btn px-3 py-1.5 rounded-lg font-jua text-sm sm:text-base bg-white text-slate-700 hover:bg-amber-100 flex items-center gap-1.5 flex-1 lg:flex-initial justify-center">
+                    <span>🎮</span> <span>2. 수호 게임</span>
+                </button>
+                <button onclick="switchTab('tab3')" id="tab-btn-tab3" class="retro-btn px-3 py-1.5 rounded-lg font-jua text-sm sm:text-base bg-white text-slate-700 hover:bg-amber-100 flex items-center gap-1.5 flex-1 lg:flex-initial justify-center relative">
+                    <span>🎵</span> <span>3. 작사 노트</span>
+                    <span id="nav-basket-badge" class="bg-rose-500 text-white text-xs font-sans font-bold px-1.5 py-0.2 rounded-full border border-slate-800">0/6</span>
+                </button>
+            </nav>
+
+            <!-- 우측 학습 현황 & 스탬프 보드 & 사운드 토글 -->
+            <div class="flex items-center gap-2 order-2 lg:order-3">
+                <!-- 수집한 키워드 카운터 -->
+                <div class="bg-amber-50 border-2 border-slate-800 rounded-xl px-2.5 py-1 flex items-center gap-2 text-xs sm:text-sm font-bold">
+                    <span title="뒤집어 읽은 키워드 카드">📖 탐험 <span id="header-learned-count" class="text-teal-700 font-extrabold">0</span>/16</span>
+                    <span class="text-slate-300">|</span>
+                    <span title="획득한 독도 수호 스탬프">💮 스탬프 <span id="header-stamp-count" class="text-rose-600 font-extrabold">0</span>/3</span>
+                </div>
+
+                <!-- 스탬프 미니 배지 3종 -->
+                <div class="hidden xl:flex items-center gap-1 bg-white border-2 border-slate-800 rounded-xl px-2 py-1">
+                    <div id="stamp-badge-1" title="스탬프 1: 키워드 8개 이상 탐험" class="w-7 h-7 rounded-full border border-dashed border-slate-400 flex items-center justify-center text-xs opacity-40 grayscale">🗺️</div>
+                    <div id="stamp-badge-2" title="스탬프 2: 파도타기 또는 골든벨 클리어" class="w-7 h-7 rounded-full border border-dashed border-slate-400 flex items-center justify-center text-xs opacity-40 grayscale">🏆</div>
+                    <div id="stamp-badge-3" title="스탬프 3: 나만의 독도 노래 가사 완성" class="w-7 h-7 rounded-full border border-dashed border-slate-400 flex items-center justify-center text-xs opacity-40 grayscale">🎵</div>
+                </div>
+
+                <!-- 효과음 On/Off 버튼 -->
+                <button onclick="toggleSound()" id="sound-toggle-btn" class="retro-btn w-9 h-9 rounded-xl bg-white flex items-center justify-center text-lg" title="효과음 켜기/끄기">
+                    🔊
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- 메인 컨테이너 -->
+    <main class="max-w-7xl mx-auto px-3 sm:px-6 pt-6">
+
+        <!-- ==========================================
+             [탭 1] 🗺️ 독도 보물섬 인터랙티브 맵 & 키워드 도감
+        =========================================== -->
+        <section id="section-tab1" class="space-y-8">
+            
+            <!-- 상단 안내 배너 & 미션 진행 바 -->
+            <div class="note-card p-4 sm:p-6 relative bg-gradient-to-r from-teal-50 via-white to-sky-50">
+                <div class="masking-tape"></div>
+                <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                    <div>
+                        <span class="inline-block bg-teal-600 text-white text-xs font-bold px-2.5 py-1 rounded-full mb-1.5">MISSION 1 : 가사 재료 보물찾기</span>
+                        <h2 class="font-jua text-2xl sm:text-3xl text-slate-900">독도 지도를 클릭하거나 카드를 뒤집어 보물을 모으세요!</h2>
+                        <p class="text-sm text-slate-600 mt-1">카드를 클릭해 뒷면의 <b>'노래 가사 힌트'</b>를 읽고, 마음에 드는 키워드 최대 <b>6개</b>를 <b>[⭐ 내 작사 바구니]</b>에 담아보세요.</p>
+                    </div>
+                    <!-- 프로그레스 & 바구니 현황 -->
+                    <div class="w-full md:w-80 bg-white p-3 rounded-xl border-2 border-slate-800 shrink-0">
+                        <div class="flex justify-between text-xs font-bold mb-1">
+                            <span>🗺️ 독도 지식 탐험도</span>
+                            <span id="progress-text" class="text-teal-600">1 / 16 완료 (6%)</span>
+                        </div>
+                        <div class="w-full h-3.5 bg-slate-200 rounded-full overflow-hidden border border-slate-800">
+                            <div id="progress-bar" class="h-full bg-gradient-to-r from-teal-400 to-sky-500 transition-all duration-300" style="width: 6%"></div>
+                        </div>
+                        <div class="mt-2.5 flex items-center justify-between text-xs">
+                            <div class="flex items-center gap-1.5">
+                                <span class="font-bold text-slate-700">⭐ 내 바구니: <strong id="basket-count-text" class="text-rose-600">0</strong>/6개</span>
+                                <button onclick="clearBasket()" class="text-[11px] bg-slate-100 hover:bg-rose-100 text-slate-600 hover:text-rose-700 px-1.5 py-0.5 rounded border border-slate-400 font-bold" title="바구니 비우기">비우기</button>
+                            </div>
+                            <button onclick="switchTab('tab3')" class="text-teal-700 font-extrabold hover:underline">작사 노트로 이동 ➔</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 인터랙티브 독도 일러스트 지도 + 선택된 키워드 프리뷰 패널 -->
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
+                <!-- 좌측: 인터랙티브 독도 SVG 맵 (7칸) -->
+                <div class="lg:col-span-7 note-card p-3 sm:p-4 bg-sky-100 relative overflow-hidden flex flex-col justify-between">
+                    <div class="flex items-center justify-between mb-2 px-1">
+                        <span class="font-jua text-base sm:text-lg text-sky-900 flex items-center gap-1.5">
+                            <span>🧭</span> <span>독도 보물섬 지도 (1~16번 번호 뱃지를 클릭해 보세요!)</span>
+                        </span>
+                        <span class="text-xs bg-white/90 px-2.5 py-1 rounded-full font-bold text-slate-700 border border-slate-400">번호 클릭 시 오른쪽에 설명 표시</span>
+                    </div>
+
+                    <!-- SVG 일러스트 맵 -->
+                    <div class="relative w-full aspect-[16/10] rounded-xl overflow-hidden border-2 border-slate-800 shadow-inner bg-gradient-to-b from-sky-200 via-sky-300 to-blue-900">
+                        <svg viewBox="0 0 800 500" class="w-full h-full select-none">
+                            <defs>
+                                <linearGradient id="skyGrad" x1="0" y1="0" x2="0" y2="1">
+                                    <stop offset="0%" stop-color="#bae6fd"/>
+                                    <stop offset="55%" stop-color="#e0f2fe"/>
+                                    <stop offset="100%" stop-color="#7dd3fc"/>
+                                </linearGradient>
+                                <linearGradient id="seaGrad" x1="0" y1="0" x2="0" y2="1">
+                                    <stop offset="0%" stop-color="#0284c7"/>
+                                    <stop offset="50%" stop-color="#0369a1"/>
+                                    <stop offset="100%" stop-color="#0f172a"/>
+                                </linearGradient>
+                                <linearGradient id="islandGrad" x1="0" y1="0" x2="0" y2="1">
+                                    <stop offset="0%" stop-color="#4d7c0f"/>
+                                    <stop offset="45%" stop-color="#78350f"/>
+                                    <stop offset="100%" stop-color="#451a03"/>
+                                </linearGradient>
+                            </defs>
+
+                            <!-- 배경 그래픽 그룹 (클릭 간섭 방지를 위해 pointer-events: none 처리) -->
+                            <g pointer-events="none">
+                                <!-- 하늘 배경 -->
+                                <rect x="0" y="0" width="800" height="310" fill="url(#skyGrad)"/>
+
+                                <!-- 떠오르는 아침 해 (우측 상단 - 고정형) -->
+                                <circle cx="710" cy="85" r="48" fill="#fde047" opacity="0.3"/>
+                                <circle cx="710" cy="85" r="36" fill="#facc15" stroke="#ca8a04" stroke-width="3"/>
+
+                                <!-- 구름 장식 -->
+                                <g fill="#ffffff" opacity="0.85">
+                                    <path d="M90,70 Q105,50 130,60 Q155,45 175,65 Q195,70 190,88 L75,88 Q65,75 90,70 Z"/>
+                                    <path d="M450,50 Q465,35 485,45 Q505,35 520,52 Q535,58 530,72 L440,72 Q430,60 450,50 Z"/>
+                                </g>
+
+                                <!-- 저 멀리 울릉도 실루엣 (좌측 수평선) -->
+                                <path d="M25,295 Q65,255 110,295 Z" fill="#64748b" opacity="0.55"/>
+                                <text x="67" y="250" text-anchor="middle" fill="#334155" font-size="13" font-weight="bold">⬅ 울릉도 (87.4km)</text>
+                                <line x1="115" y1="280" x2="210" y2="280" stroke="#475569" stroke-width="2" stroke-dasharray="5,5"/>
+
+                                <!-- 바다 & 심해 영역 -->
+                                <rect x="0" y="290" width="800" height="210" fill="url(#seaGrad)"/>
+
+                                <!-- 심해 화산 뿌리 (신생대 화산섬 표현) -->
+                                <path d="M200,500 L260,310 L590,310 L660,500 Z" fill="#334155" opacity="0.5"/>
+                                <path d="M380,500 Q425,410 430,360 Q435,410 480,500 Z" fill="#ef4444" opacity="0.45"/>
+
+                                <!-- 서도 (좌측 뾰족하고 높은 섬) -->
+                                <g>
+                                    <path d="M195,310 L235,175 L275,140 L315,175 L365,310 Z" fill="url(#islandGrad)" stroke="#1e293b" stroke-width="4" stroke-linejoin="round"/>
+                                    <path d="M235,175 L275,140 L300,165 L265,210 Z" fill="#65a30d" opacity="0.8"/>
+                                    <rect x="315" y="272" width="28" height="22" fill="#fef08a" stroke="#1e293b" stroke-width="2"/>
+                                    <polygon points="310,272 329,256 348,272" fill="#ef4444" stroke="#1e293b" stroke-width="2"/>
+                                    <text x="275" y="245" text-anchor="middle" fill="#ffffff" font-size="20" font-weight="900" stroke="#1e293b" stroke-width="0.8">서도(西島)</text>
+                                </g>
+
+                                <!-- 동도 (우측 넓고 등대/초소가 있는 섬) -->
+                                <g>
+                                    <path d="M445,310 L475,195 L535,170 L605,180 L650,310 Z" fill="url(#islandGrad)" stroke="#1e293b" stroke-width="4" stroke-linejoin="round"/>
+                                    <path d="M475,195 L535,170 L605,180 L585,220 L495,215 Z" fill="#65a30d" opacity="0.85"/>
+                                    <rect x="570" y="138" width="16" height="36" fill="#ffffff" stroke="#1e293b" stroke-width="2"/>
+                                    <polygon points="566,138 578,124 590,138" fill="#ef4444" stroke="#1e293b" stroke-width="2"/>
+                                    <line x1="520" y1="172" x2="520" y2="130" stroke="#1e293b" stroke-width="3"/>
+                                    <rect x="520" y="130" width="30" height="20" rx="2" fill="#ffffff" stroke="#1e293b" stroke-width="1.5"/>
+                                    <circle cx="535" cy="140" r="5" fill="#ef4444"/>
+                                    <text x="550" y="255" text-anchor="middle" fill="#ffffff" font-size="20" font-weight="900" stroke="#1e293b" stroke-width="0.8">동도(東島)</text>
+                                </g>
+
+                                <!-- 가운데 89개 부속 바위섬 -->
+                                <path d="M385,310 L398,265 L418,272 L428,310 Z" fill="#57534e" stroke="#1e293b" stroke-width="3"/>
+                                <path d="M665,310 L680,275 L702,280 L710,310 Z" fill="#57534e" stroke="#1e293b" stroke-width="3"/>
+
+                                <!-- 물결 라인 애니메이션 -->
+                                <g class="wave-anim">
+                                    <path d="M-30,305 Q10,295 50,305 T130,305 T210,305 T290,305 T370,305 T450,305 T530,305 T610,305 T690,305 T770,305 T850,305" fill="none" stroke="#bae6fd" stroke-width="5" stroke-linecap="round"/>
+                                    <path d="M-10,328 Q30,318 70,328 T150,328 T230,328 T310,328 T390,328 T470,328 T550,328 T630,328 T710,328 T790,328" fill="none" stroke="#7dd3fc" stroke-width="3" stroke-linecap="round" opacity="0.7"/>
+                                </g>
+
+                                <!-- 심해 메탄하이드레이트(불타는 얼음) 일러스트 -->
+                                <g transform="translate(530, 425)">
+                                    <polygon points="0,-20 18,-5 12,18 -12,18 -18,-5" fill="#38bdf8" stroke="#e0f2fe" stroke-width="2"/>
+                                    <path d="M0,-32 Q10,-18 6,-8 Q0,-2 -6,-8 Q-10,-18 0,-32 Z" fill="#fb923c"/>
+                                </g>
+                            </g>
+
+                            <!-- ==========================================
+                                 16개 고정형 핫스팟 번호 핀 (반짝임 제거 & 넓은 클릭 반경)
+                            =========================================== -->
+                            <g id="map-hotspots"></g>
+                        </svg>
+                    </div>
+
+                    <!-- 하단 범례 -->
+                    <div class="flex flex-wrap items-center justify-between gap-2 mt-2.5 px-1 text-xs font-bold">
+                        <div class="flex flex-wrap items-center gap-3">
+                            <span class="flex items-center gap-1"><span class="w-3 h-3 rounded-full bg-emerald-500 inline-block border border-slate-800"></span> ⛰️지리·자연(1~4)</span>
+                            <span class="flex items-center gap-1"><span class="w-3 h-3 rounded-full bg-amber-500 inline-block border border-slate-800"></span> 📜역사·인물(5~8)</span>
+                            <span class="flex items-center gap-1"><span class="w-3 h-3 rounded-full bg-sky-500 inline-block border border-slate-800"></span> 🦭생태·자원(9~12)</span>
+                            <span class="flex items-center gap-1"><span class="w-3 h-3 rounded-full bg-rose-500 inline-block border border-slate-800"></span> 💖마음·가치(13~16)</span>
+                        </div>
+                        <span class="text-slate-500">💡 핀을 누르면 오른쪽에 자세한 설명이 나와요!</span>
+                    </div>
+                </div>
+
+                <!-- 우측: 선택한 핫스팟 상세 돋보기 패널 (5칸) -->
+                <div class="lg:col-span-5 note-card p-5 bg-amber-50/70 flex flex-col justify-between relative">
+                    <div>
+                        <div class="flex items-center justify-between border-b-2 border-dashed border-slate-300 pb-3">
+                            <span id="spotlight-category" class="bg-emerald-500 text-white text-xs font-extrabold px-3 py-1 rounded-full border border-slate-800">⛰️ 지리·자연 #1</span>
+                            <span id="spotlight-learned-badge" class="text-xs font-bold text-slate-500">👀 탐험 중</span>
+                        </div>
+
+                        <!-- 키워드 일러스트 & 제목 -->
+                        <div class="flex items-center gap-4 my-4">
+                            <div id="spotlight-icon" class="w-20 h-20 rounded-2xl bg-white border-2 border-slate-800 shadow-[3px_3px_0px_#1e293b] flex items-center justify-center shrink-0 p-2">
+                                <!-- SVG injected by JS -->
+                            </div>
+                            <div>
+                                <div id="spotlight-hashtags" class="text-xs font-bold text-teal-700 mb-0.5">#동도 #서도 #89개바위섬</div>
+                                <h3 id="spotlight-title" class="font-jua text-2xl sm:text-3xl text-slate-900">동도와 서도</h3>
+                            </div>
+                        </div>
+
+                        <!-- 핵심 스토리 설명 -->
+                        <div class="bg-white p-4 rounded-xl border-2 border-slate-800 space-y-2">
+                            <div class="text-xs font-extrabold text-slate-400 uppercase tracking-wider">📖 독도 핵심 스토리</div>
+                            <p id="spotlight-desc" class="text-slate-800 text-sm sm:text-base leading-relaxed font-medium">
+                                독도는 외로운 하나의 섬이 아니에요! 큰 형님 같은 '동도'와 '서도' 두 개의 큰 섬과, 그 주변을 둘러싼 89개의 크고 작은 바위섬으로 이루어진 아름다운 섬 가족이랍니다.
+                            </p>
+                        </div>
+
+                        <!-- 2차시 노래 가사 힌트 박스 -->
+                        <div class="mt-3 bg-teal-50 p-3.5 rounded-xl border-2 border-teal-700">
+                            <div class="text-xs font-extrabold text-teal-800 flex items-center gap-1 mb-1">
+                                <span>🎵</span> <span>2차시 Suno AI 노래 가사 힌트</span>
+                            </div>
+                            <p id="spotlight-lyric" class="font-jua text-base sm:text-lg text-teal-950">
+                                "마주 보는 형제 같은 동도와 서도"
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- 하단 액션 버튼 -->
+                    <div class="mt-5 pt-3 border-t-2 border-dashed border-slate-300 flex items-center gap-2">
+                        <button id="spotlight-basket-btn" onclick="toggleBasketFromSpotlight()" class="retro-btn flex-1 py-3 px-4 rounded-xl font-jua text-base sm:text-lg bg-amber-300 hover:bg-amber-400 text-slate-900 flex items-center justify-center gap-2">
+                            <span>⭐ 내 작사 바구니에 담기</span>
+                        </button>
+                        <button onclick="selectNextSpotlight()" class="retro-btn py-3 px-4 rounded-xl font-jua text-base bg-white hover:bg-slate-100 text-slate-800" title="다음 키워드 보기">
+                            다음 ➔
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 카테고리 필터 바 & 일괄 뒤집기 컨트롤 -->
+            <div class="flex flex-wrap items-center justify-between gap-3 pt-2">
+                <div class="flex flex-wrap items-center gap-2">
+                    <button onclick="filterCards('all')" id="filter-all" class="retro-btn px-4 py-2 rounded-xl font-jua text-sm sm:text-base bg-slate-800 text-white">
+                        🌈 전체 보기 (16)
+                    </button>
+                    <button onclick="filterCards('geo')" id="filter-geo" class="retro-btn px-3.5 py-2 rounded-xl font-jua text-sm sm:text-base bg-white text-slate-800 hover:bg-emerald-100">
+                        ⛰️ 지리·자연 (4)
+                    </button>
+                    <button onclick="filterCards('his')" id="filter-his" class="retro-btn px-3.5 py-2 rounded-xl font-jua text-sm sm:text-base bg-white text-slate-800 hover:bg-amber-100">
+                        📜 역사·인물 (4)
+                    </button>
+                    <button onclick="filterCards('eco')" id="filter-eco" class="retro-btn px-3.5 py-2 rounded-xl font-jua text-sm sm:text-base bg-white text-slate-800 hover:bg-sky-100">
+                        🦭 생태·자원 (4)
+                    </button>
+                    <button onclick="filterCards('heart')" id="filter-heart" class="retro-btn px-3.5 py-2 rounded-xl font-jua text-sm sm:text-base bg-white text-slate-800 hover:bg-rose-100">
+                        💖 마음·가치 (4)
+                    </button>
+                </div>
+
+                <div class="flex items-center gap-2">
+                    <button onclick="flipAllCards(true)" class="text-xs font-bold bg-white px-3 py-2 rounded-lg border-2 border-slate-800 hover:bg-teal-50">
+                        🔄 전체 뒷면(설명) 펼치기
+                    </button>
+                    <button onclick="flipAllCards(false)" class="text-xs font-bold bg-white px-3 py-2 rounded-lg border-2 border-slate-800 hover:bg-teal-50">
+                        🎴 전체 앞면으로
+                    </button>
+                </div>
+            </div>
+
+            <!-- 16개 키워드 3D 플립 카드 그리드 -->
+            <div id="cards-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+                <!-- JS로 16개 카드 렌더링 -->
+            </div>
+        </section>
+
+
+        <!-- ==========================================
+             [탭 2] 🎮 독도 수호 미니게임 2종
+        =========================================== -->
+        <section id="section-tab2" class="hidden space-y-6">
+            <!-- 게임 선택 서브 탭 -->
+            <div class="note-card p-4 sm:p-5 bg-gradient-to-r from-sky-50 via-white to-amber-50 flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div>
+                    <span class="bg-sky-600 text-white text-xs font-bold px-2.5 py-1 rounded-full">MISSION 2 : 신나는 복습 게임</span>
+                    <h2 class="font-jua text-2xl sm:text-3xl text-slate-900 mt-1">독도 수호 미니게임 2종에 도전하세요!</h2>
+                    <p class="text-xs sm:text-sm text-slate-600">게임 1종 이상을 클리어하면 <b>[🏆 독도 수호자 스탬프]</b>를 획득합니다.</p>
+                </div>
+                <div class="flex items-center gap-2 w-full sm:w-auto">
+                    <button onclick="switchGameMode('wave')" id="game-mode-wave" class="retro-btn flex-1 sm:flex-initial px-4 py-2.5 rounded-xl font-jua text-base bg-sky-500 text-white">
+                        🌊 게임 1: 파도타기 키워드 캐치
+                    </button>
+                    <button onclick="switchGameMode('quiz')" id="game-mode-quiz" class="retro-btn flex-1 sm:flex-initial px-4 py-2.5 rounded-xl font-jua text-base bg-white text-slate-800 hover:bg-amber-100">
+                        ⚡ 게임 2: 독도 골든벨 & 퍼즐
+                    </button>
+                </div>
+            </div>
+
+            <!-- [게임 1] 🌊 파도타기 키워드 바구니 캐치 -->
+            <div id="game-container-wave" class="note-card p-4 sm:p-6 bg-white">
+                <div class="flex flex-wrap items-center justify-between gap-3 mb-4 pb-3 border-b-2 border-dashed border-slate-200">
+                    <div>
+                        <h3 class="font-jua text-xl sm:text-2xl text-sky-900">🌊 파도타기 독도 키워드 바구니 캐치!</h3>
+                        <p class="text-xs sm:text-sm text-slate-600">하늘에서 떨어지는 <b>진짜 독도 키워드 방울(⭕)</b>은 받고, <b>가짜 오답 폭탄(💣 마라도, 펭귄, 하와이 등)</b>은 피하세요!</p>
+                    </div>
+                    <!-- 미션 테마 필터 선택 -->
+                    <div class="flex items-center gap-2">
+                        <label class="text-xs font-bold text-slate-700">난이도/미션:</label>
+                        <select id="wave-mission-select" class="border-2 border-slate-800 rounded-lg px-2.5 py-1.5 text-xs sm:text-sm font-bold bg-amber-50">
+                            <option value="all">🌟 기본: 모든 진짜 독도 키워드 받기!</option>
+                            <option value="his">📜 심화: [역사·인물] 키워드만 골라 받기!</option>
+                            <option value="eco">🦭 심화: [생태·자원] 키워드만 골라 받기!</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- 게임 상태 표시줄 -->
+                <div class="grid grid-cols-3 gap-3 mb-3 text-center">
+                    <div class="bg-rose-50 border-2 border-slate-800 rounded-xl py-2 px-3">
+                        <div class="text-xs font-bold text-slate-500">생명력</div>
+                        <div id="wave-hearts" class="text-lg sm:text-xl font-black text-rose-500">❤️❤️❤️</div>
+                    </div>
+                    <div class="bg-amber-50 border-2 border-slate-800 rounded-xl py-2 px-3">
+                        <div class="text-xs font-bold text-slate-500">점수 (콤보)</div>
+                        <div class="font-jua text-xl sm:text-2xl text-amber-600"><span id="wave-score">0</span>점 <span id="wave-combo" class="text-xs text-rose-600"></span></div>
+                    </div>
+                    <div class="bg-sky-50 border-2 border-slate-800 rounded-xl py-2 px-3">
+                        <div class="text-xs font-bold text-slate-500">남은 시간</div>
+                        <div class="font-jua text-xl sm:text-2xl text-sky-700"><span id="wave-timer">30</span>초</div>
+                    </div>
+                </div>
+
+                <!-- 캔버스 아케이드 영역 -->
+                <div class="relative w-full max-w-3xl mx-auto aspect-[16/10] bg-gradient-to-b from-sky-200 via-sky-300 to-blue-800 rounded-2xl border-3 border-slate-800 overflow-hidden shadow-inner">
+                    <canvas id="wave-canvas" class="w-full h-full block touch-none"></canvas>
+
+                    <!-- 시작/결과 오버레이 화면 -->
+                    <div id="wave-overlay" class="absolute inset-0 bg-slate-900/75 backdrop-blur-sm flex flex-col items-center justify-center p-6 text-center text-white">
+                        <div class="text-5xl mb-3">🚤</div>
+                        <h4 id="wave-overlay-title" class="font-jua text-2xl sm:text-3xl text-amber-300 mb-2">독도 수호 보트 출동 준비 완료!</h4>
+                        <p id="wave-overlay-desc" class="text-sm sm:text-base text-slate-200 max-w-md mb-5">
+                            키보드 <b>좌/우 방향키(◀ ▶)</b> 또는 화면을 <b>마우스/손가락으로 드래그</b>하여 보트를 움직이세요.<br>30초 동안 100점 이상을 달성하면 수호 스탬프를 받습니다!
+                        </p>
+                        <button onclick="startWaveGame()" class="retro-btn px-8 py-3.5 rounded-2xl font-jua text-xl bg-amber-400 hover:bg-amber-300 text-slate-900">
+                            🚀 게임 시작하기!
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 모바일/터치용 좌우 이동 보조 버튼 -->
+                <div class="flex justify-center items-center gap-6 mt-4">
+                    <button onmousedown="setBoatMove(-1)" onmouseup="setBoatMove(0)" ontouchstart="setBoatMove(-1)" ontouchend="setBoatMove(0)" class="retro-btn px-8 py-3 rounded-xl font-jua text-lg bg-slate-100 active:bg-sky-200 select-none">
+                        ◀ 왼쪽 이동
+                    </button>
+                    <span class="text-xs font-bold text-slate-500 hidden sm:inline">키보드 ◀ ▶ 또는 마우스 드래그 지원</span>
+                    <button onmousedown="setBoatMove(1)" onmouseup="setBoatMove(0)" ontouchstart="setBoatMove(1)" ontouchend="setBoatMove(0)" class="retro-btn px-8 py-3 rounded-xl font-jua text-lg bg-slate-100 active:bg-sky-200 select-none">
+                        오른쪽 이동 ▶
+                    </button>
+                </div>
+            </div>
+
+            <!-- [게임 2] ⚡ 독도 골든벨 스피드 퀴즈 & 퍼즐 완성 -->
+            <div id="game-container-quiz" class="hidden note-card p-4 sm:p-6 bg-white">
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+                    <!-- 좌측: 퀴즈 문제 영역 (7칸) -->
+                    <div class="lg:col-span-7 space-y-4">
+                        <div class="flex items-center justify-between border-b-2 border-slate-200 pb-3">
+                            <div>
+                                <span id="quiz-step-badge" class="bg-amber-400 text-slate-900 text-xs font-extrabold px-2.5 py-1 rounded-md border border-slate-800">QUESTION 1 / 8</span>
+                                <h3 class="font-jua text-xl sm:text-2xl text-slate-900 mt-1">⚡ 독도 골든벨 스피드 퀴즈</h3>
+                            </div>
+                            <div class="text-right">
+                                <span class="text-xs font-bold text-slate-500">맞힌 퍼즐 조각</span>
+                                <div class="font-jua text-2xl text-teal-600"><span id="quiz-correct-count">0</span> / 8</div>
+                            </div>
+                        </div>
+
+                        <!-- 질문 박스 -->
+                        <div id="quiz-question-box" class="bg-amber-50 border-2 border-slate-800 rounded-2xl p-5 min-h-[120px] flex flex-col justify-center">
+                            <p id="quiz-question-text" class="font-jua text-lg sm:text-xl text-slate-900 leading-snug">
+                                Q1. 문제를 불러오는 중입니다...
+                            </p>
+                        </div>
+
+                        <!-- 4지선다 / OX 보기 버튼들 -->
+                        <div id="quiz-options-grid" class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <!-- JS로 렌더링 -->
+                        </div>
+
+                        <!-- 오답 시 다시 풀어보기 힌트 안내 박스 -->
+                        <div id="quiz-retry-hint-box" class="hidden p-3.5 rounded-xl border-2 border-rose-500 bg-rose-50 text-rose-900 text-xs sm:text-sm font-bold flex items-center justify-between gap-2">
+                            <span id="quiz-retry-hint-text">💡 아쉬워요! 다시 한 번 생각해서 다른 보기를 골라보세요!</span>
+                            <span class="bg-white px-2.5 py-1 rounded-lg border border-rose-400 text-rose-700 shrink-0">재도전 가능!</span>
+                        </div>
+
+                        <!-- 정답 피드백 해설 박스 -->
+                        <div id="quiz-feedback-box" class="hidden p-4 rounded-xl border-2 border-slate-800 bg-teal-50 space-y-2">
+                            <div id="quiz-feedback-title" class="font-jua text-lg">🎉 정답입니다!</div>
+                            <p id="quiz-feedback-desc" class="text-xs sm:text-sm text-slate-700"></p>
+                            <button id="quiz-next-btn" onclick="nextQuizQuestion()" class="retro-btn mt-2 px-5 py-2 rounded-lg font-jua text-sm bg-teal-600 text-white">
+                                다음 문제로 ➔
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- 우측: 독도 8조각 포스터 퍼즐 보드 (5칸) -->
+                    <div class="lg:col-span-5 bg-sky-50 border-2 border-slate-800 rounded-2xl p-4">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="font-jua text-base text-sky-950">🧩 독도 수호 퍼즐 보드</span>
+                            <button onclick="initQuizGame()" class="text-xs font-bold text-teal-700 hover:underline">🔄 처음부터 다시 풀기</button>
+                        </div>
+                        <p class="text-xs text-slate-600 mb-3">문제를 맞힐 때마다 가려진 독도 일러스트 퍼즐 조각이 하나씩 열립니다!</p>
+
+                        <!-- 4x2 퍼즐 조각 그리드 -->
+                        <div class="relative aspect-[4/3] w-full rounded-xl overflow-hidden border-2 border-slate-800 bg-gradient-to-b from-sky-300 to-blue-800">
+                            <!-- 배경 완성 일러스트 -->
+                            <div class="absolute inset-0 flex flex-col items-center justify-center p-4 text-center">
+                                <div class="text-5xl mb-2">🏝️🇰🇷🦭</div>
+                                <div class="font-jua text-2xl text-white drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)]">대한민국의 아름다운 보물섬, 독도!</div>
+                                <div class="text-xs font-bold text-amber-200 mt-1">10월 25일 독도의 날을 기억해요</div>
+                            </div>
+                            <!-- 8개 덮개 타일 -->
+                            <div id="quiz-puzzle-grid" class="absolute inset-0 grid grid-cols-4 grid-rows-2">
+                                <!-- JS로 8개 타일 생성 -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+
+        <!-- ==========================================
+             [탭 3] 🎵 나만의 독도 해시태그 작사 노트 (2차시 연계)
+        =========================================== -->
+        <section id="section-tab3" class="hidden space-y-8">
+            
+            <!-- 상단 안내 배너 -->
+            <div class="note-card p-4 sm:p-6 bg-gradient-to-r from-amber-50 via-white to-teal-50 relative">
+                <div class="masking-tape"></div>
+                <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                    <div>
+                        <span class="bg-rose-500 text-white text-xs font-bold px-2.5 py-1 rounded-full">MISSION 3 : 2차시 Suno AI 작곡 준비</span>
+                        <h2 class="font-jua text-2xl sm:text-3xl text-slate-900 mt-1">나만의 독도지킴이 노래 설계도</h2>
+                        <p class="text-xs sm:text-sm text-slate-600">내가 직접 담은 키워드로 가사를 만들고, 마음에 들지 않으면 <b>[🔄 다른 버전으로 가사 다시 쓰기]</b>를 눌러 5가지 스타일로 바꿔보세요!</p>
+                    </div>
+                    <div class="flex flex-wrap items-center gap-2 shrink-0">
+                        <button onclick="rewriteFullLyrics(false)" class="retro-btn px-4 py-2.5 rounded-xl font-jua text-sm sm:text-base bg-amber-300 hover:bg-amber-400 text-slate-900 flex items-center gap-1.5">
+                            <span>✨ 현재 스타일로 가사 생성</span>
+                        </button>
+                        <button onclick="rewriteFullLyrics(true)" class="retro-btn px-4 py-2.5 rounded-xl font-jua text-sm sm:text-base bg-teal-500 hover:bg-teal-600 text-white flex items-center gap-1.5">
+                            <span>🔄 다른 버전으로 가사 다시 쓰기</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+                
+                <!-- 좌측: Step 1 ~ Step 3 작사 입력 폼 (7칸) -->
+                <div class="lg:col-span-7 space-y-6">
+                    
+                    <!-- Step 1: 내 작사 바구니 키워드 & 가사 힌트 선택 -->
+                    <div class="note-card p-5 space-y-4">
+                        <div class="flex flex-wrap items-center justify-between gap-2">
+                            <h3 class="font-jua text-lg sm:text-xl text-slate-900 flex items-center gap-2">
+                                <span class="bg-teal-600 text-white text-xs font-sans font-extrabold px-2 py-0.5 rounded-md">STEP 1</span>
+                                <span>내 작사 바구니 키워드 (<span id="step1-count">0</span>/6개)</span>
+                            </h3>
+                            <div class="flex items-center gap-1.5">
+                                <button onclick="fillRandomKeywords()" class="text-xs font-bold text-teal-800 hover:bg-teal-100 bg-teal-50 px-2.5 py-1 rounded-md border border-teal-500">
+                                    🎲 추천 키워드 5개 담기
+                                </button>
+                                <button onclick="clearBasket()" class="text-xs font-bold text-rose-700 hover:bg-rose-100 bg-rose-50 px-2.5 py-1 rounded-md border border-rose-400">
+                                    🗑️ 바구니 비우기
+                                </button>
+                            </div>
+                        </div>
+                        <p class="text-xs text-slate-500">직접 담은 키워드만 이곳에 표시됩니다. 키워드 칩의 <b>[+가사넣기]</b>를 누르면 선택한 가사 칸에 문장이 들어가고, <b>[✕]</b>를 누르면 바구니에서 빠집니다.</p>
+
+                        <!-- 바구니에 담긴 키워드 칩 영역 -->
+                        <div id="step1-basket-chips" class="flex flex-wrap gap-2 min-h-[52px] p-3 bg-slate-50 rounded-xl border-2 border-dashed border-slate-300 items-center">
+                            <!-- JS 렌더링 -->
+                        </div>
+
+                        <!-- 전체 16개 키워드 빠른 추가/제거 토글 서랍 -->
+                        <details class="bg-amber-50/70 rounded-xl border-2 border-slate-300 p-3 text-xs" open>
+                            <summary class="font-bold text-slate-800 cursor-pointer select-none">➕ 여기서 바로 키워드 골라 담기 / 빼기 (16개 전체 목록)</summary>
+                            <div id="step1-all-keywords-picker" class="flex flex-wrap gap-1.5 mt-3 pt-2 border-t border-slate-200">
+                                <!-- JS 렌더링 -->
+                            </div>
+                        </details>
+                    </div>
+
+                    <!-- Step 2: 노래 장르 및 분위기 선택 (Suno Style 매칭) -->
+                    <div class="note-card p-5 space-y-3">
+                        <h3 class="font-jua text-lg sm:text-xl text-slate-900 flex items-center gap-2">
+                            <span class="bg-teal-600 text-white text-xs font-sans font-extrabold px-2 py-0.5 rounded-md">STEP 2</span>
+                            <span>노래 분위기 & 장르 고르기 (Suno Style)</span>
+                        </h3>
+                        <p class="text-xs text-slate-500">원하는 장르를 고르면 Suno AI가 가장 잘 이해하는 영어 스타일 프롬프트가 자동으로 설정됩니다.</p>
+
+                        <div id="genre-selector-grid" class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                            <!-- JS로 5개 장르 버튼 렌더링 -->
+                        </div>
+                    </div>
+
+                    <!-- Step 3: 구조화된 가사 작성하기 (5종 스타일 다시 쓰기 + 구간별 다시 쓰기) -->
+                    <div class="note-card p-5 space-y-4">
+                        <div class="flex flex-wrap items-center justify-between gap-2 border-b-2 border-dashed border-slate-200 pb-3">
+                            <div>
+                                <h3 class="font-jua text-lg sm:text-xl text-slate-900 flex items-center gap-2">
+                                    <span class="bg-teal-600 text-white text-xs font-sans font-extrabold px-2 py-0.5 rounded-md">STEP 3</span>
+                                    <span>나만의 독도지킴이 가사 쓰기 & 다시 쓰기</span>
+                                </h3>
+                                <p class="text-xs text-slate-500 mt-0.5">가사가 마음에 안 들면 버전(A~E)을 바꾸거나 <b>[🔄 다른 버전으로 다시 쓰기]</b>를 눌러보세요!</p>
+                            </div>
+                            <button onclick="rewriteFullLyrics(true)" class="retro-btn text-xs sm:text-sm font-jua bg-teal-500 hover:bg-teal-600 text-white px-3.5 py-2 rounded-xl flex items-center gap-1">
+                                <span>🔄 다른 버전으로 전체 다시 쓰기</span>
+                            </button>
+                        </div>
+
+                        <!-- 5가지 작사 스타일 버전 선택 탭 (버전 A ~ 버전 E) -->
+                        <div class="bg-amber-50/80 p-3 rounded-xl border-2 border-slate-800 space-y-2">
+                            <div class="flex items-center justify-between">
+                                <span class="text-xs font-extrabold text-slate-700">🎨 작사 스타일 버전 선택 (클릭 시 해당 버전으로 즉시 다시 작사됩니다)</span>
+                                <span id="current-template-badge" class="text-[11px] font-extrabold bg-amber-300 text-slate-900 px-2 py-0.5 rounded border border-slate-700">버전 A 적용 중</span>
+                            </div>
+                            <div id="lyric-template-buttons" class="grid grid-cols-1 sm:grid-cols-5 gap-1.5">
+                                <!-- JS로 5개 버전 버튼 렌더링 -->
+                            </div>
+                        </div>
+
+                        <!-- 작사가 이름 & 노래 제목 -->
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-xs font-extrabold text-slate-700 mb-1">👤 작사가 (학번/이름 또는 모둠명)</label>
+                                <input type="text" id="song-author" oninput="updateSongPreview()" placeholder="예: 5학년 2반 김독도" class="w-full px-3 py-2 rounded-xl border-2 border-slate-800 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-teal-400">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-extrabold text-slate-700 mb-1">🎵 노래 제목</label>
+                                <input type="text" id="song-title" oninput="updateSongPreview()" placeholder="예: 동쪽 끝 보물섬 독도를 노래해" class="w-full px-3 py-2 rounded-xl border-2 border-slate-800 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-teal-400">
+                            </div>
+                        </div>
+
+                        <!-- [Verse 1] 1절 -->
+                        <div>
+                            <div class="flex flex-wrap justify-between items-center gap-1 mb-1.5">
+                                <label class="text-xs font-extrabold text-teal-800">[Verse 1] 1절 - 독도의 모습과 자연/생태 소개하기</label>
+                                <button onclick="rewriteSectionOnly('verse1')" class="text-xs font-bold bg-teal-50 hover:bg-teal-100 text-teal-800 px-2.5 py-1 rounded-lg border border-teal-500 flex items-center gap-1">
+                                    <span>🎲 1절만 다른 표현으로 다시 쓰기</span>
+                                </button>
+                            </div>
+                            <textarea id="lyrics-verse1" onfocus="setActiveLyricField('lyrics-verse1')" oninput="updateSongPreview()" rows="3" placeholder="직접 가사를 적거나 상단의 [가사 다시 쓰기] 버튼을 눌러보세요!" class="w-full p-3 rounded-xl border-2 border-slate-800 text-sm leading-relaxed focus:outline-none focus:ring-2 focus:ring-teal-400"></textarea>
+                        </div>
+
+                        <!-- [Chorus] 후렴구 -->
+                        <div>
+                            <div class="flex flex-wrap justify-between items-center gap-1 mb-1.5">
+                                <label class="text-xs font-extrabold text-rose-700">[Chorus] 후렴구 - 가장 강조하고 싶은 핵심 메시지 (반복)</label>
+                                <button onclick="rewriteSectionOnly('chorus')" class="text-xs font-bold bg-rose-50 hover:bg-rose-100 text-rose-800 px-2.5 py-1 rounded-lg border border-rose-400 flex items-center gap-1">
+                                    <span>🎲 후렴구만 다른 표현으로 다시 쓰기</span>
+                                </button>
+                            </div>
+                            <textarea id="lyrics-chorus" onfocus="setActiveLyricField('lyrics-chorus')" oninput="updateSongPreview()" rows="3" placeholder="가장 강조하고 싶은 후렴구를 적어보세요!" class="w-full p-3 rounded-xl border-2 border-rose-700 bg-rose-50/40 text-sm leading-relaxed focus:outline-none focus:ring-2 focus:ring-rose-400"></textarea>
+                        </div>
+
+                        <!-- [Verse 2] 2절 -->
+                        <div>
+                            <div class="flex flex-wrap justify-between items-center gap-1 mb-1.5">
+                                <label class="text-xs font-extrabold text-sky-800">[Verse 2] 2절 - 독도의 역사와 우리의 다짐</label>
+                                <button onclick="rewriteSectionOnly('verse2')" class="text-xs font-bold bg-sky-50 hover:bg-sky-100 text-sky-800 px-2.5 py-1 rounded-lg border border-sky-500 flex items-center gap-1">
+                                    <span>🎲 2절만 다른 표현으로 다시 쓰기</span>
+                                </button>
+                            </div>
+                            <textarea id="lyrics-verse2" onfocus="setActiveLyricField('lyrics-verse2')" oninput="updateSongPreview()" rows="3" placeholder="독도를 사랑하는 우리의 다짐을 적어보세요!" class="w-full p-3 rounded-xl border-2 border-slate-800 text-sm leading-relaxed focus:outline-none focus:ring-2 focus:ring-teal-400"></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 우측: Step 4 실시간 노래 설계도 미리보기 & Suno AI 복사/인쇄 (5칸) -->
+                <div class="lg:col-span-5 lg:sticky lg:top-24 space-y-4">
+                    <div id="printable-certificate" class="note-card p-5 sm:p-6 bg-amber-50 relative">
+                        <div class="masking-tape no-print"></div>
+
+                        <!-- 인증서 헤더 -->
+                        <div class="border-b-2 border-slate-800 pb-3 mb-4 flex items-center justify-between">
+                            <div>
+                                <span class="text-[11px] font-extrabold bg-teal-600 text-white px-2 py-0.5 rounded">2차시 Suno AI 작곡 설계도</span>
+                                <h3 id="preview-song-title" class="font-jua text-2xl text-slate-900 mt-1">나만의 독도지킴이 송</h3>
+                                <p class="text-xs font-bold text-slate-600">작사가: <span id="preview-song-author">익명의 독도지킴이</span></p>
+                            </div>
+                            <div class="w-14 h-14 rounded-full bg-white border-2 border-rose-600 flex flex-col items-center justify-center text-rose-600 font-jua text-xs rotate-6 shadow-sm shrink-0">
+                                <span>독도수호</span>
+                                <span class="text-sm font-black">인증필</span>
+                            </div>
+                        </div>
+
+                        <!-- 사용된 핵심 키워드 태그 -->
+                        <div class="mb-3">
+                            <div class="text-xs font-extrabold text-slate-500 mb-1">📌 노래에 담긴 독도 키워드</div>
+                            <div id="preview-keywords-list" class="flex flex-wrap gap-1">
+                                <!-- JS 렌더링 -->
+                            </div>
+                        </div>
+
+                        <!-- Suno AI Style of Music 박스 -->
+                        <div class="mb-3 bg-white p-3 rounded-xl border-2 border-slate-800">
+                            <div class="flex items-center justify-between mb-1">
+                                <span class="text-xs font-extrabold text-teal-800">🎛️ Suno [Style of Music] 프롬프트</span>
+                                <button onclick="copySunoStyleOnly()" class="no-print text-[11px] font-bold bg-teal-100 hover:bg-teal-200 text-teal-900 px-2 py-0.5 rounded border border-teal-600">스타일만 복사</button>
+                            </div>
+                            <div id="preview-genre-kr" class="text-xs font-bold text-slate-700 mb-0.5">신나는 K-POP 댄스</div>
+                            <code id="preview-style-prompt" class="block text-xs font-mono text-rose-600 bg-slate-100 p-1.5 rounded border border-slate-300 break-all">Upbeat K-pop, energetic dance, bright synth, catchy chorus</code>
+                        </div>
+
+                        <!-- Suno AI Lyrics 박스 -->
+                        <div class="bg-white p-3.5 rounded-xl border-2 border-slate-800">
+                            <div class="flex items-center justify-between mb-1.5">
+                                <span class="text-xs font-extrabold text-teal-800">🎤 Suno [Lyrics] 구조화 가사</span>
+                                <button onclick="copySunoLyricsOnly()" class="no-print text-[11px] font-bold bg-teal-100 hover:bg-teal-200 text-teal-900 px-2 py-0.5 rounded border border-teal-600">가사만 복사</button>
+                            </div>
+                            <pre id="preview-lyrics-full" class="text-xs sm:text-sm font-sans whitespace-pre-wrap text-slate-800 leading-relaxed max-h-64 overflow-y-auto"></pre>
+                        </div>
+
+                        <!-- 하단 액션 버튼 (복사 & 인쇄) -->
+                        <div class="mt-4 space-y-2 no-print">
+                            <button onclick="copyFullSunoPrompt()" class="retro-btn w-full py-3 px-4 rounded-xl font-jua text-base sm:text-lg bg-teal-500 hover:bg-teal-600 text-white flex items-center justify-center gap-2">
+                                <span>📋 Suno AI용 프롬프트(Style + Lyrics) 한 번에 복사하기</span>
+                            </button>
+                            <div class="grid grid-cols-2 gap-2">
+                                <button onclick="window.print()" class="retro-btn py-2.5 px-3 rounded-xl font-jua text-sm bg-white hover:bg-slate-100 text-slate-800 flex items-center justify-center gap-1.5">
+                                    <span>🖨️ 설계도 학습지 인쇄</span>
+                                </button>
+                                <button onclick="openSunoGuideModal()" class="retro-btn py-2.5 px-3 rounded-xl font-jua text-sm bg-amber-200 hover:bg-amber-300 text-slate-900 flex items-center justify-center gap-1.5">
+                                    <span>💡 2차시 Suno 사용법 보기</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- ==========================================
+         공통 토스트 알림 & 2차시 Suno 가이드 모달
+    =========================================== -->
+    <div id="toast-container" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+    <!-- Suno AI 사용 가이드 모달 -->
+    <div id="suno-guide-modal" class="fixed inset-0 z-50 hidden bg-slate-900/70 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="note-card max-w-lg w-full p-6 bg-white relative space-y-4">
+            <div class="flex items-center justify-between border-b-2 border-slate-200 pb-3">
+                <h3 class="font-jua text-2xl text-slate-900">🎵 2차시 Suno AI로 독도 노래 만드는 법!</h3>
+                <button onclick="closeSunoGuideModal()" class="w-8 h-8 rounded-lg border-2 border-slate-800 font-bold hover:bg-rose-100">✕</button>
+            </div>
+            <ol class="space-y-3 text-sm text-slate-700 list-decimal list-inside font-medium">
+                <li>Suno AI (<span class="font-mono text-teal-700 font-bold">suno.com</span>)에 접속해 왼쪽 메뉴의 <b>[Create]</b>를 누릅니다.</li>
+                <li>상단의 <b>[Custom]</b>(커스텀 모드) 스위치를 꼭 켜주세요!</li>
+                <li><b>[Lyrics]</b> 칸에 이 웹앱에서 만든 <b>가사([Verse 1], [Chorus], [Verse 2])</b>를 복사해 붙여넣습니다.</li>
+                <li><b>[Style of Music]</b> 칸에 <b>영어 장르 프롬프트</b>(예: <code class="bg-slate-100 px-1 rounded">Upbeat K-pop...</code>)를 붙여넣습니다.</li>
+                <li><b>[Title]</b>에 노래 제목을 적고 <b>[Create]</b> 버튼을 누르면 1분 만에 나만의 독도지킴이 노래 2곡이 탄생합니다!</li>
+            </ol>
+            <div class="bg-amber-50 p-3 rounded-xl border border-amber-400 text-xs text-amber-900 font-bold">
+                💡 3차시 팁: 완성된 노래 중 마음에 드는 곡의 점 3개(···) 메뉴를 눌러 <b>[Download] ➔ [Audio (.mp3)]</b>로 저장하면 뮤직비디오를 만들 수 있어요!
+            </div>
+            <button onclick="closeSunoGuideModal()" class="retro-btn w-full py-2.5 rounded-xl font-jua text-base bg-teal-500 text-white">확인했어요!</button>
+        </div>
+    </div>
+
+    <script>
+        /* =========================================================
+           1. 효과음 합성기 (Web Audio API - 외부 파일 없이 즉석 사운드)
+        ========================================================= */
+        let soundEnabled = true;
+        let audioCtx = null;
+
+        function initAudio() {
+            if (!audioCtx) {
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                if (AudioContext) audioCtx = new AudioContext();
+            }
+            if (audioCtx && audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+        }
+
+        function playSound(type) {
+            if (!soundEnabled) return;
+            try {
+                initAudio();
+                if (!audioCtx) return;
+                const now = audioCtx.currentTime;
+
+                if (type === 'flip') {
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(420, now);
+                    osc.frequency.exponentialRampToValueAtTime(680, now + 0.08);
+                    gain.gain.setValueAtTime(0.12, now);
+                    gain.gain.linearRampToValueAtTime(0.01, now + 0.08);
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    osc.start(now);
+                    osc.stop(now + 0.08);
+                } else if (type === 'coin' || type === 'basket') {
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(587.33, now); // D5
+                    osc.frequency.setValueAtTime(880, now + 0.07); // A5
+                    gain.gain.setValueAtTime(0.18, now);
+                    gain.gain.linearRampToValueAtTime(0.01, now + 0.22);
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    osc.start(now);
+                    osc.stop(now + 0.22);
+                } else if (type === 'wrong') {
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(220, now);
+                    osc.frequency.linearRampToValueAtTime(130, now + 0.25);
+                    gain.gain.setValueAtTime(0.15, now);
+                    gain.gain.linearRampToValueAtTime(0.01, now + 0.25);
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    osc.start(now);
+                    osc.stop(now + 0.25);
+                } else if (type === 'fanfare') {
+                    const notes = [523.25, 659.25, 783.99, 1046.50]; // C5 E5 G5 C6
+                    notes.forEach((freq, idx) => {
+                        const osc = audioCtx.createOscillator();
+                        const gain = audioCtx.createGain();
+                        osc.type = 'triangle';
+                        osc.frequency.setValueAtTime(freq, now + idx * 0.09);
+                        gain.gain.setValueAtTime(0.16, now + idx * 0.09);
+                        gain.gain.linearRampToValueAtTime(0.01, now + idx * 0.09 + 0.25);
+                        osc.connect(gain);
+                        gain.connect(audioCtx.destination);
+                        osc.start(now + idx * 0.09);
+                        osc.stop(now + idx * 0.09 + 0.25);
+                    });
+                }
+            } catch (e) {
+                // Ignore audio errors
+            }
+        }
+
+        function toggleSound() {
+            soundEnabled = !soundEnabled;
+            const btn = document.getElementById('sound-toggle-btn');
+            btn.textContent = soundEnabled ? '🔊' : '🔇';
+            showToast(soundEnabled ? '🔊 효과음이 켜졌습니다.' : '🔇 효과음이 꺼졌습니다.');
+        }
+
+        /* =========================================================
+           2. 16개 핵심 키워드 데이터 (일러스트 SVG, 스토리, 가사 힌트, 맵 좌표)
+        ========================================================= */
+        const DOKDO_KEYWORDS = [
+            // ⛰️ 지리·자연 (1~4)
+            {
+                id: 1,
+                category: 'geo',
+                categoryName: '⛰️ 지리·자연',
+                badgeColor: 'bg-emerald-500',
+                cardBg: 'bg-emerald-50',
+                title: '동도와 서도',
+                hashtags: '#2개의큰섬 #89개바위섬 #독도가족',
+                desc: '독도는 외로운 섬 하나가 아니에요! 다정하게 마주 보는 두 개의 큰 섬(동도, 서도)과 그 주변을 둘러싼 89개의 바위섬으로 이루어진 화산섬 가족이랍니다.',
+                lyricHint: '마주 보는 형제 같은 동도와 서도',
+                mapX: 420, mapY: 235,
+                svg: `<svg viewBox="0 0 64 64" class="w-14 h-14"><path d="M6,50 L18,22 L30,50 Z" fill="#65a30d" stroke="#1e293b" stroke-width="2.5"/><path d="M32,50 L44,26 L58,50 Z" fill="#84cc16" stroke="#1e293b" stroke-width="2.5"/><path d="M4,50 Q32,56 60,50" fill="none" stroke="#0284c7" stroke-width="4" stroke-linecap="round"/></svg>`
+            },
+            {
+                id: 2,
+                category: 'geo',
+                categoryName: '⛰️ 지리·자연',
+                badgeColor: 'bg-emerald-500',
+                cardBg: 'bg-emerald-50',
+                title: '대한민국 동쪽 끝',
+                hashtags: '#가장먼저뜨는해 #아침의시작 #동해바다',
+                desc: '독도는 우리나라 가장 동쪽 끝에 위치해 있어요. 그래서 대한민국에서 가장 먼저 찬란한 아침 해가 떠오르는 희망의 시작점이랍니다.',
+                lyricHint: '가장 먼저 아침 해가 반짝이는 곳',
+                mapX: 710, mapY: 85,
+                svg: `<svg viewBox="0 0 64 64" class="w-14 h-14"><circle cx="32" cy="34" r="16" fill="#facc15" stroke="#1e293b" stroke-width="2.5"/><line x1="32" y1="8" x2="32" y2="14" stroke="#eab308" stroke-width="3" stroke-linecap="round"/><line x1="12" y1="18" x2="17" y2="22" stroke="#eab308" stroke-width="3" stroke-linecap="round"/><line x1="52" y1="18" x2="47" y2="22" stroke="#eab308" stroke-width="3" stroke-linecap="round"/><path d="M6,46 L58,46" stroke="#0284c7" stroke-width="4" stroke-linecap="round"/></svg>`
+            },
+            {
+                id: 3,
+                category: 'geo',
+                categoryName: '⛰️ 지리·자연',
+                badgeColor: 'bg-emerald-500',
+                cardBg: 'bg-emerald-50',
+                title: '화산섬 (신생대)',
+                hashtags: '#460만년전 #해저화산 #독도의고향',
+                desc: '약 460만 년 전(신생대), 깊은 동해 바다 밑에서 뜨거운 용암이 분출해 솟아오른 해저 화산섬이에요. 울릉도와 제주도보다도 훨씬 먼저 태어난 큰형님 섬이죠!',
+                lyricHint: '뜨거운 바다의 숨결로 태어난 신비의 섬',
+                mapX: 430, mapY: 420,
+                svg: `<svg viewBox="0 0 64 64" class="w-14 h-14"><path d="M12,54 L24,26 L40,26 L52,54 Z" fill="#78350f" stroke="#1e293b" stroke-width="2.5"/><path d="M24,26 Q32,36 40,26 Q36,12 32,10 Q28,12 24,26 Z" fill="#ef4444" stroke="#1e293b" stroke-width="2"/><circle cx="26" cy="10" r="3" fill="#fb923c"/><circle cx="39" cy="12" r="2.5" fill="#facc15"/></svg>`
+            },
+            {
+                id: 4,
+                category: 'geo',
+                categoryName: '⛰️ 지리·자연',
+                badgeColor: 'bg-emerald-500',
+                cardBg: 'bg-emerald-50',
+                title: '울릉도 옆 이웃섬',
+                hashtags: '#87.4km #맑은날육안관측 #세종실록지리지',
+                desc: '독도는 울릉도에서 동남쪽으로 87.4km 떨어져 있어요. 날씨가 맑은 날에는 울릉도에서도 맨눈으로 독도를 뚜렷하게 볼 수 있어 옛날부터 울릉도의 형제섬으로 불렸답니다.',
+                lyricHint: '맑은 날 울릉도에서 손 흔들면 보이는 곳',
+                mapX: 85, mapY: 275,
+                svg: `<svg viewBox="0 0 64 64" class="w-14 h-14"><path d="M4,46 Q14,28 24,46 Z" fill="#0d9488" stroke="#1e293b" stroke-width="2"/><path d="M42,46 L48,32 L54,46 L60,36 L62,46 Z" fill="#65a30d" stroke="#1e293b" stroke-width="2"/><line x1="24" y1="36" x2="42" y2="36" stroke="#ef4444" stroke-width="2.5" stroke-dasharray="3,3"/></svg>`
+            },
+
+            // 📜 역사·인물 (5~8)
+            {
+                id: 5,
+                category: 'his',
+                categoryName: '📜 역사·인물',
+                badgeColor: 'bg-amber-500',
+                cardBg: 'bg-amber-50',
+                title: '10월 25일 (칙령 제41호)',
+                hashtags: '#1900년10월25일 #고종황제 #독도의날유래',
+                desc: '1900년 10월 25일, 대한제국 고종 황제가 "독도(석도)를 울도군(울릉도)이 관할한다"는 칙령 제41호를 세계에 반포했어요. 이 날을 기념해 10월 25일이 독도의 날이 되었답니다!',
+                lyricHint: '기억해 10월 25일 대한제국 칙령 41호',
+                mapX: 525, mapY: 132,
+                svg: `<svg viewBox="0 0 64 64" class="w-14 h-14"><rect x="14" y="10" width="36" height="44" rx="4" fill="#fef08a" stroke="#1e293b" stroke-width="2.5"/><rect x="10" y="10" width="44" height="7" rx="3" fill="#ca8a04" stroke="#1e293b" stroke-width="2"/><rect x="10" y="48" width="44" height="7" rx="3" fill="#ca8a04" stroke="#1e293b" stroke-width="2"/><text x="32" y="37" text-anchor="middle" font-size="13" font-weight="900" fill="#b91c1c">10.25</text></svg>`
+            },
+            {
+                id: 6,
+                category: 'his',
+                categoryName: '📜 역사·인물',
+                badgeColor: 'bg-amber-500',
+                cardBg: 'bg-amber-50',
+                title: '안용복',
+                hashtags: '#조선숙종 #민간외교관 #우리땅수호',
+                desc: '조선 숙종 때 어부였던 안용복은 독도 주변에 침범한 일본 어부들을 꾸짖고, 두 차례나 직접 일본에 건너가 "울릉도와 독도는 조선의 땅"이라는 공식 문서를 받아낸 용감한 인물이에요.',
+                lyricHint: '거친 파도 헤치고 외쳤던 안용복의 용기',
+                mapX: 220, mapY: 315,
+                svg: `<svg viewBox="0 0 64 64" class="w-14 h-14"><circle cx="32" cy="28" r="14" fill="#fed7aa" stroke="#1e293b" stroke-width="2.5"/><path d="M14,22 Q32,8 50,22 Z" fill="#1e293b"/><path d="M16,54 Q32,42 48,54" fill="#0284c7" stroke="#1e293b" stroke-width="2.5"/></svg>`
+            },
+            {
+                id: 7,
+                category: 'his',
+                categoryName: '📜 역사·인물',
+                badgeColor: 'bg-amber-500',
+                cardBg: 'bg-amber-50',
+                title: '이사부와 우산국',
+                hashtags: '#신라지증왕512년 #삼국사기 #천오백년역사',
+                desc: '신라 지증왕 13년(512년), 이사부 장군이 울릉도와 독도를 포함한 "우산국"을 신라에 복속시켰어요. 무려 1,500년 전부터 독도는 우리나라 역사와 함께했답니다.',
+                lyricHint: '천오백 년 전부터 이어진 우산국의 역사',
+                mapX: 165, mapY: 160,
+                svg: `<svg viewBox="0 0 64 64" class="w-14 h-14"><path d="M12,42 L52,42 L44,52 L20,52 Z" fill="#92400e" stroke="#1e293b" stroke-width="2.5"/><line x1="32" y1="12" x2="32" y2="42" stroke="#1e293b" stroke-width="3"/><path d="M32,14 L50,26 L32,36 Z" fill="#fde047" stroke="#1e293b" stroke-width="2"/></svg>`
+            },
+            {
+                id: 8,
+                category: 'his',
+                categoryName: '📜 역사·인물',
+                badgeColor: 'bg-amber-500',
+                cardBg: 'bg-amber-50',
+                title: '독도의용수비대',
+                hashtags: '#홍순칠대장 #33인의영웅 #민간수비대',
+                desc: '6·25 전쟁 직후인 1953년, 홍순칠 대장을 비롯한 33명의 울릉도 청년들이 스스로 결성한 수비대예요. 열악한 환경 속에서도 3년 넘게 온몸으로 독도를 지켜냈습니다.',
+                lyricHint: '서른세 명 영웅들이 온몸으로 지켜낸 바다',
+                mapX: 485, mapY: 225,
+                svg: `<svg viewBox="0 0 64 64" class="w-14 h-14"><path d="M32,8 L52,18 L52,34 Q52,50 32,58 Q12,50 12,34 L12,18 Z" fill="#3b82f6" stroke="#1e293b" stroke-width="2.5"/><text x="32" y="39" text-anchor="middle" font-size="16" font-weight="900" fill="#ffffff">33</text></svg>`
+            },
+
+            // 🦭 생태·자원 (9~12)
+            {
+                id: 9,
+                category: 'eco',
+                categoryName: '🦭 생태·자원',
+                badgeColor: 'bg-sky-500',
+                cardBg: 'bg-sky-50',
+                title: '독도 강치 (바다사자)',
+                hashtags: '#가제바위 #그리운친구 #잊지말아야할역사',
+                desc: '한때 독도 바다에는 수만 마리의 강치(바다사자)가 살았어요. 하지만 일제강점기 무자비한 남획으로 멸종되었죠. 우리가 꼭 기억하고 다시 지켜주어야 할 소중한 생태계의 상징입니다.',
+                lyricHint: '푸른 파도 위를 뛰놀던 강치의 꿈을 기억해',
+                mapX: 395, mapY: 295,
+                svg: `<svg viewBox="0 0 64 64" class="w-14 h-14"><path d="M18,48 Q20,24 34,20 Q44,18 46,28 Q48,38 54,48 Z" fill="#475569" stroke="#1e293b" stroke-width="2.5"/><circle cx="38" cy="25" r="2.5" fill="#1e293b"/><circle cx="45" cy="26" r="2" fill="#0f172a"/></svg>`
+            },
+            {
+                id: 10,
+                category: 'eco',
+                categoryName: '🦭 생태·자원',
+                badgeColor: 'bg-sky-500',
+                cardBg: 'bg-sky-50',
+                title: '괭이갈매기',
+                hashtags: '#고양이울음소리 #독도의하늘주인 #부리끝검은띠',
+                desc: '"야옹~" 고양이 같은 울음소리를 내서 괭이갈매기라고 불러요! 노란 부리 끝에 검은색과 빨간색 점이 있는 것이 특징이며, 매년 봄 수많은 괭이갈매기가 독도에서 새끼를 기릅니다.',
+                lyricHint: '하늘 높이 날아오르는 괭이갈매기의 노래',
+                mapX: 375, mapY: 115,
+                svg: `<svg viewBox="0 0 64 64" class="w-14 h-14"><path d="M10,34 Q24,18 32,30 Q40,18 54,34" fill="none" stroke="#1e293b" stroke-width="4" stroke-linecap="round"/><circle cx="32" cy="30" r="6" fill="#ffffff" stroke="#1e293b" stroke-width="2"/><polygon points="38,30 46,28 38,33" fill="#eab308"/></svg>`
+            },
+            {
+                id: 11,
+                category: 'eco',
+                categoryName: '🦭 생태·자원',
+                badgeColor: 'bg-sky-500',
+                cardBg: 'bg-sky-50',
+                title: '메탄하이드레이트',
+                hashtags: '#불타는얼음 #미래청정에너지 #해저보물창고',
+                desc: '독도 깊은 바다 밑에는 드라이아이스처럼 생겼지만 불을 붙이면 타오르는 "불타는 얼음(메탄하이드레이트)"이 엄청나게 묻혀 있어요. 우리나라가 오랫동안 쓸 수 있는 차세대 에너지원이랍니다.',
+                lyricHint: '깊은 바다 아래 잠든 불타는 얼음 보물창고',
+                mapX: 550, mapY: 430,
+                svg: `<svg viewBox="0 0 64 64" class="w-14 h-14"><polygon points="16,32 32,20 48,32 42,52 22,52" fill="#38bdf8" stroke="#1e293b" stroke-width="2.5"/><path d="M32,8 Q42,20 36,30 Q32,35 28,30 Q22,20 32,8 Z" fill="#f97316" stroke="#1e293b" stroke-width="2"/></svg>`
+            },
+            {
+                id: 12,
+                category: 'eco',
+                categoryName: '🦭 생태·자원',
+                badgeColor: 'bg-sky-500',
+                cardBg: 'bg-sky-50',
+                title: '독도 사철나무',
+                hashtags: '#천연기념물제538호 #100년넘은나무 #강인한생명력',
+                desc: '가파른 바위 절벽과 거센 바닷바람을 이겨내고 100년 넘게 독도를 지켜온 가장 오래된 나무예요. 독도의 강인한 생명력을 보여준다고 하여 천연기념물로 지정되었습니다.',
+                lyricHint: '거센 비바람 이겨낸 푸른 사철나무처럼',
+                mapX: 270, mapY: 165,
+                svg: `<svg viewBox="0 0 64 64" class="w-14 h-14"><rect x="28" y="36" width="8" height="18" fill="#78350f" stroke="#1e293b" stroke-width="2"/><circle cx="32" cy="26" r="15" fill="#16a34a" stroke="#1e293b" stroke-width="2.5"/><circle cx="23" cy="30" r="10" fill="#22c55e" stroke="#1e293b" stroke-width="2"/></svg>`
+            },
+
+            // 💖 마음·가치 (13~16)
+            {
+                id: 13,
+                category: 'heart',
+                categoryName: '💖 마음·가치',
+                badgeColor: 'bg-rose-500',
+                cardBg: 'bg-rose-50',
+                title: '독도경비대',
+                hashtags: '#24시간철통수호 #동도등대 #든든한수호자',
+                desc: '독도 의용수비대의 정신을 이어받아, 지금 이 순간에도 비가 오나 눈이 오나 24시간 내내 독도를 든든하게 지키고 있는 자랑스러운 대한민국 경찰 경비대입니다.',
+                lyricHint: '밤낮으로 등대처럼 독도를 지키는 발걸음',
+                mapX: 590, mapY: 155,
+                svg: `<svg viewBox="0 0 64 64" class="w-14 h-14"><rect x="24" y="20" width="16" height="34" fill="#ffffff" stroke="#1e293b" stroke-width="2.5"/><polygon points="22,20 32,10 42,20" fill="#ef4444" stroke="#1e293b" stroke-width="2"/><path d="M40,16 L58,10 L58,22 Z" fill="#fde047" opacity="0.8"/></svg>`
+            },
+            {
+                id: 14,
+                category: 'heart',
+                categoryName: '💖 마음·가치',
+                badgeColor: 'bg-rose-500',
+                cardBg: 'bg-rose-50',
+                title: '주민 등록 우리 이웃',
+                hashtags: '#독도리산1-96 #최초주민최종덕 #김성도김신열부부',
+                desc: '독도는 사람이 살지 않는 무인도가 아니에요! 최초 주민 최종덕 님과 김성도·김신열 부부, 그리고 독도경비대원 등 우리 국민이 실제 주민등록 주소를 두고 살아가는 소중한 마을입니다.',
+                lyricHint: '사람들의 따뜻한 숨결이 살아 숨 쉬는 마을',
+                mapX: 330, mapY: 270,
+                svg: `<svg viewBox="0 0 64 64" class="w-14 h-14"><rect x="16" y="28" width="32" height="24" fill="#fef08a" stroke="#1e293b" stroke-width="2.5"/><polygon points="10,28 32,12 54,28" fill="#f43f5e" stroke="#1e293b" stroke-width="2.5"/><rect x="27" y="38" width="10" height="14" fill="#78350f"/></svg>`
+            },
+            {
+                id: 15,
+                category: 'heart',
+                categoryName: '💖 마음·가치',
+                badgeColor: 'bg-rose-500',
+                cardBg: 'bg-rose-50',
+                title: '평화와 생명의 섬',
+                hashtags: '#천연보호구역 #철새들의쉼터 #황금어장',
+                desc: '차가운 북한 해류와 따뜻한 동한 해류가 만나는 독도 바다는 물고기가 풍부한 황금어장이자, 먼 길을 날아가는 철새들이 날개를 쉬어가는 평화와 생명의 안식처예요.',
+                lyricHint: '생명이 숨 쉬고 평화가 파도치는 아름다운 섬',
+                mapX: 685, mapY: 285,
+                svg: `<svg viewBox="0 0 64 64" class="w-14 h-14"><path d="M32,52 C32,52 12,38 12,24 C12,16 20,12 27,17 L32,22 L37,17 C44,12 52,16 52,24 C52,38 32,52 32,52 Z" fill="#fb7185" stroke="#1e293b" stroke-width="2.5"/></svg>`
+            },
+            {
+                id: 16,
+                category: 'heart',
+                categoryName: '💖 마음·가치',
+                badgeColor: 'bg-rose-500',
+                cardBg: 'bg-rose-50',
+                title: '독도지킴이 (우리)',
+                hashtags: '#바르게알기 #노래로알리기 #사이버외교사절단',
+                desc: '독도를 가장 멋지게 지키는 방법은 무엇일까요? 바로 오늘 우리처럼 독도의 역사와 자연을 정확히 알고, 아름다운 노래와 영상으로 만들어 세상 사람들에게 알리는 것이랍니다!',
+                lyricHint: '우리가 불러줄게 영원한 독도지킴이 노래',
+                mapX: 280, mapY: 410,
+                svg: `<svg viewBox="0 0 64 64" class="w-14 h-14"><polygon points="32,8 39,24 56,26 43,38 47,55 32,46 17,55 21,38 8,26 25,24" fill="#facc15" stroke="#1e293b" stroke-width="2.5"/></svg>`
+            }
+        ];
+
+        // Suno AI 장르 데이터 (Step 2)
+        const SUNO_GENRES = [
+            {
+                id: 'kpop',
+                name: '✨ 신나는 K-POP 아이돌 댄스',
+                desc: '밝고 경쾌한 리듬, 귀에 쏙 들어오는 멜로디',
+                prompt: 'Upbeat K-pop, energetic idol dance, bright synth, catchy chorus, cheerful vocal'
+            },
+            {
+                id: 'rock',
+                name: '🎸 가슴이 웅장해지는 록 발라드',
+                desc: '강렬한 일렉기타와 감동적이고 힘찬 보컬',
+                prompt: 'Epic rock ballad, emotional electric guitar, powerful anthem vocals, cinematic drums'
+            },
+            {
+                id: 'hiphop',
+                name: '🎤 리듬감 넘치는 트렌디 힙합/랩',
+                desc: '키워드가 귀에 쏙쏙 박히는 멋있는 랩 비트',
+                prompt: 'Trendy Korean hip-hop, rhythmic boom bap beat, energetic rap flow, melodic hook'
+            },
+            {
+                id: 'acoustic',
+                name: '🌿 따뜻하고 포근한 어쿠스틱 포크',
+                desc: '통기타 소리와 함께 부드럽게 부르는 동요/팝 느낌',
+                prompt: 'Warm acoustic pop, bright acoustic guitar, gentle breeze, sweet and clear vocals'
+            },
+            {
+                id: 'band',
+                name: '🌊 청량한 청춘 밴드 사운드',
+                desc: '푸른 동해 바다를 달리는 듯한 시원한 밴드 음악',
+                prompt: 'Refreshing youth rock band, upbeat drums, bright piano and guitar, hopeful melody'
+            }
+        ];
+
+        // 5가지 작사 스타일 버전 엔진 (버전 A ~ 버전 E)
+        const LYRIC_TEMPLATES = [
+            {
+                id: 0,
+                code: '버전 A',
+                shortName: '🌊 감성·서정',
+                fullName: '버전 A: 푸른 바다와 자연을 노래하는 감성·서정 스타일',
+                matchedGenre: 'acoustic',
+                titles: [
+                    '푸른 동해의 보석, 우리의 독도',
+                    '아침 해가 머무는 아름다운 섬 독도',
+                    '파도 소리 들리는 독도의 하루'
+                ],
+                buildVerse1: (kws) => [
+                    `동해 바다 끝자락에 ${kws[0].title} 살며시 미소 짓고`,
+                    `${kws[1].lyricHint}`,
+                    `푸른 물결 위에 수놓아진 눈부신 자연의 선물`
+                ],
+                buildChorus: (kws) => [
+                    `바라만 보아도 가슴 벅찬 이름, 우리의 보물섬 독도`,
+                    `${kws[2].lyricHint}`,
+                    `언제나 그 자리에서 빛나길, 우리가 사랑하는 독도야`
+                ],
+                buildVerse2: (kws) => [
+                    `세월의 바람 속에서도 ${kws[3].title}의 이야기를 품은 채`,
+                    `${kws[4].lyricHint}`,
+                    `따스한 마음 모아 영원히 너의 곁을 지켜줄게`
+                ]
+            },
+            {
+                id: 1,
+                code: '버전 B',
+                shortName: '✨ 아이돌 응원가',
+                fullName: '버전 B: 다 함께 따라 부르기 좋은 신나는 아이돌 응원가 스타일',
+                matchedGenre: 'kpop',
+                titles: [
+                    '빛나라 독도! 우리의 보물섬 (Shiny Dokdo)',
+                    '하나 되어 외쳐봐, 독도지킴이!',
+                    '반짝반짝 동쪽 끝 독도 송'
+                ],
+                buildVerse1: (kws) => [
+                    `하나 둘 셋! 눈을 뜨면 펼쳐지는 푸른 바다의 기적!`,
+                    `${kws[0].lyricHint}, ${kws[1].title}까지 모두 모여봐!`,
+                    `어디서나 당당하게 반짝이는 우리의 자랑스러운 섬`
+                ],
+                buildChorus: (kws) => [
+                    `다 함께 소리 높여 노래해! 독도는 언제나 우리 땅!`,
+                    `기억해 ${kws[2].title}, 잊지 마 ${kws[3].title}!`,
+                    `너와 내가 손을 잡고 만들어 갈 행복한 독도지킴이!`
+                ],
+                buildVerse2: (kws) => [
+                    `${kws[4].lyricHint}`,
+                    `푸른 파도 리듬에 맞춰 신나게 발을 굴러봐`,
+                    `온 세상 끝까지 울려 퍼질 우리의 밝은 멜로디!`
+                ]
+            },
+            {
+                id: 2,
+                code: '버전 C',
+                shortName: '🎸 웅장한 수호다짐',
+                fullName: '버전 C: 역사적 사실과 수호 의지를 담은 웅장한 다짐 스타일',
+                matchedGenre: 'rock',
+                titles: [
+                    '천오백 년의 약속, 독도를 지키리라',
+                    '10월 25일의 울림, 대한의 독도',
+                    '거친 파도를 넘어 독도 수호의 노래'
+                ],
+                buildVerse1: (kws) => [
+                    `거친 동해의 파도를 뚫고 우뚝 솟은 생명의 땅`,
+                    `${kws[0].lyricHint}`,
+                    `수많은 세월 속에 새겨진 ${kws[1].title}의 숭고한 발자취`
+                ],
+                buildChorus: (kws) => [
+                    `역사가 증명하는 대한민국의 자존심, 독도여!`,
+                    `${kws[2].lyricHint}`,
+                    `그 어떤 비바람에도 흔들리지 않을 우리의 굳센 약속!`
+                ],
+                buildVerse2: (kws) => [
+                    `${kws[3].lyricHint}`,
+                    `선조들의 뜨거운 숨결을 이어받은 ${kws[4].title}의 이름으로`,
+                    `영원토록 푸른 바다의 주인으로 당당히 서 있으리라`
+                ]
+            },
+            {
+                id: 3,
+                code: '버전 D',
+                shortName: '🎤 트렌디 힙합·랩',
+                fullName: '버전 D: 라임과 리듬감이 살아있는 트렌디 힙합·랩 스타일',
+                matchedGenre: 'hiphop',
+                titles: [
+                    'DOKDO Vibe (독도 바이브)',
+                    '동쪽 끝 리듬을 타, 독도 수호 랩',
+                    '팩트 체크! 독도는 우리 땅'
+                ],
+                buildVerse1: (kws) => [
+                    `Yeah, 동해 바다 가장 동쪽 끝에서 시작되는 진짜 스토리!`,
+                    `${kws[0].title}부터 ${kws[1].title}까지 팩트로 가득 찬 보물섬`,
+                    `${kws[0].lyricHint}, 리듬에 맞춰 똑똑히 기억해`
+                ],
+                buildChorus: (kws) => [
+                    `Hands up! 소리 질러 외쳐봐, 독도는 우리의 자부심!`,
+                    `${kws[2].lyricHint}`,
+                    `어제와 오늘 그리고 내일도 변치 않는 우리의 땅, Dokdo!`
+                ],
+                buildVerse2: (kws) => [
+                    `잠깐, 귀 기울여 들어봐 ${kws[3].title}의 놀라운 이야기`,
+                    `${kws[4].lyricHint}`,
+                    `우리가 직접 쓴 가사와 비트로 전 세계에 멋지게 알려!`
+                ]
+            },
+            {
+                id: 4,
+                code: '버전 E',
+                shortName: '🌿 동화·어쿠스틱',
+                fullName: '버전 E: 이야기하듯 따뜻하게 들려주는 동화·어쿠스틱 스타일',
+                matchedGenre: 'band',
+                titles: [
+                    '안녕, 나의 친구 독도야',
+                    '갈매기가 들려주는 독도 이야기',
+                    '울릉도 옆 다정한 보물섬'
+                ],
+                buildVerse1: (kws) => [
+                    `옛날부터 푸른 바다 한가운데 다정한 섬 가족이 살았대요`,
+                    `${kws[0].lyricHint}`,
+                    `하얀 파도 거품은 매일 아침 ${kws[1].title}에게 인사를 건네죠`
+                ],
+                buildChorus: (kws) => [
+                    `고마워요 독도야, 우리 곁에 소중히 있어 주어서`,
+                    `${kws[2].lyricHint}`,
+                    `언제까지나 너의 이름을 다정하게 불러줄게요`
+                ],
+                buildVerse2: (kws) => [
+                    `별빛이 쏟아지는 밤바다에도 ${kws[3].title}의 이야기는 계속되고`,
+                    `${kws[4].lyricHint}`,
+                    `우리들의 따뜻한 노래가 파도를 타고 독도에 닿기를 바라며`
+                ]
+            }
+        ];
+
+        /* =========================================================
+           3. 상태 관리 (학습 완료 카드, 작사 바구니, 스탬프, 선택 장르)
+           * 핵심 수정: basketIds는 반드시 빈 배열([])로 시작하여 내가 담지 않은 키워드가 자동 담기지 않게 함!
+        ========================================================= */
+        let learnedIds = new Set([1]); // 기본 1번 카드는 돋보기에 표시
+        let basketIds = []; // 초기값 0개 (엄격한 수동 제어)
+        let stamps = {
+            explorer: false, // 키워드 8개 이상 학습
+            gamer: false,    // 미니게임 클리어
+            composer: false  // 가사 노트 작성
+        };
+        let currentSpotlightId = 1;
+        let currentCategoryFilter = 'all';
+        let selectedGenreId = 'kpop';
+        let activeLyricFieldId = 'lyrics-verse1';
+        let currentTemplateIdx = 0;
+        let sectionVariationCounter = { verse1: 0, chorus: 0, verse2: 0 };
+
+        /* =========================================================
+           4. 탭 전환 및 상단 스탬프/진행도 업데이트
+        ========================================================= */
+        function switchTab(tabId) {
+            ['tab1', 'tab2', 'tab3'].forEach(t => {
+                const sec = document.getElementById(`section-${t}`);
+                const btn = document.getElementById(`tab-btn-${t}`);
+                if (t === tabId) {
+                    sec.classList.remove('hidden');
+                    btn.className = 'retro-btn px-3 py-1.5 rounded-lg font-jua text-sm sm:text-base bg-teal-500 text-white flex items-center gap-1.5 flex-1 lg:flex-initial justify-center relative';
+                } else {
+                    sec.classList.add('hidden');
+                    btn.className = 'retro-btn px-3 py-1.5 rounded-lg font-jua text-sm sm:text-base bg-white text-slate-700 hover:bg-amber-100 flex items-center gap-1.5 flex-1 lg:flex-initial justify-center relative';
+                }
+            });
+            playSound('flip');
+            if (tabId === 'tab3') {
+                renderStep1Basket();
+                renderTemplateButtons();
+                updateSongPreview();
+            }
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function updateProgressAndStamps() {
+            const learnedCount = learnedIds.size;
+            const pct = Math.round((learnedCount / DOKDO_KEYWORDS.length) * 100);
+
+            document.getElementById('header-learned-count').textContent = learnedCount;
+            document.getElementById('progress-text').textContent = `${learnedCount} / 16 완료 (${pct}%)`;
+            document.getElementById('progress-bar').style.width = `${pct}%`;
+
+            // 바구니 배지 업데이트
+            document.getElementById('basket-count-text').textContent = basketIds.length;
+            document.getElementById('nav-basket-badge').textContent = `${basketIds.length}/6`;
+
+            // 스탬프 1 체크 (8개 이상 탐험)
+            if (learnedCount >= 8 && !stamps.explorer) {
+                stamps.explorer = true;
+                unlockStampUI(1, '🗺️ [독도 탐험가 스탬프] 획득! (키워드 8개 이상 탐험)');
+            }
+
+            const totalStamps = Object.values(stamps).filter(Boolean).length;
+            document.getElementById('header-stamp-count').textContent = totalStamps;
+        }
+
+        function unlockStampUI(stampNum, message) {
+            const badge = document.getElementById(`stamp-badge-${stampNum}`);
+            if (badge) {
+                badge.classList.remove('opacity-40', 'grayscale', 'border-dashed');
+                badge.classList.add('bg-amber-300', 'border-slate-800', 'stamp-active');
+            }
+            playSound('fanfare');
+            showToast(message, 'stamp');
+        }
+
+        function showToast(msg, type = 'info') {
+            const container = document.getElementById('toast-container');
+            const el = document.createElement('div');
+            const bg = type === 'stamp' ? 'bg-amber-300 text-slate-900' : 'bg-slate-900 text-white';
+            el.className = `${bg} border-2 border-slate-800 shadow-[4px_4px_0px_#0f766e] px-4 py-2.5 rounded-xl font-jua text-sm sm:text-base transition-all duration-300`;
+            el.textContent = msg;
+            container.appendChild(el);
+            setTimeout(() => {
+                el.style.opacity = '0';
+                el.style.transform = 'translateY(10px)';
+                setTimeout(() => el.remove(), 300);
+            }, 2600);
+        }
+
+        /* =========================================================
+           5. [탭 1] 인터랙티브 독도 맵 핫스팟 (반짝임 제거 & 클릭 개선)
+        ========================================================= */
+        function renderMapHotspots() {
+            const g = document.getElementById('map-hotspots');
+            g.innerHTML = '';
+            const pinColors = {
+                geo: '#10b981',
+                his: '#f59e0b',
+                eco: '#0ea5e9',
+                heart: '#f43f5e'
+            };
+
+            DOKDO_KEYWORDS.forEach(item => {
+                const isSelected = item.id === currentSpotlightId;
+                const isLearned = learnedIds.has(item.id);
+                const baseColor = pinColors[item.category];
+
+                const group = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+                group.setAttribute('class', 'hotspot-pin');
+                group.setAttribute('transform', `translate(${item.mapX}, ${item.mapY})`);
+
+                // 클릭 및 모바일 터치 이벤트 확실히 바인딩
+                const handlePinSelect = (e) => {
+                    e.stopPropagation();
+                    selectSpotlight(item.id, true);
+                };
+                group.addEventListener('click', handlePinSelect);
+
+                // 1) 반지름 26px의 넓은 투명 클릭 영역 (클릭 미스 방지)
+                const hitArea = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                hitArea.setAttribute('r', '26');
+                hitArea.setAttribute('class', 'hotspot-hit-area');
+                group.appendChild(hitArea);
+
+                // 2) 선택된 핀은 고정된 이중 테두리 링으로 또렷하게 강조 (반짝임/움직임 없음)
+                if (isSelected) {
+                    const outerRing = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                    outerRing.setAttribute('r', '20');
+                    outerRing.setAttribute('fill', '#fde047');
+                    outerRing.setAttribute('stroke', '#1e293b');
+                    outerRing.setAttribute('stroke-width', '2.5');
+                    outerRing.setAttribute('pointer-events', 'none');
+                    group.appendChild(outerRing);
+                }
+
+                // 3) 메인 번호 뱃지 원
+                const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                circle.setAttribute('r', isSelected ? '15' : '14');
+                circle.setAttribute('fill', isSelected ? '#1e293b' : baseColor);
+                circle.setAttribute('stroke', isSelected ? '#fde047' : '#ffffff');
+                circle.setAttribute('stroke-width', '2.5');
+                circle.setAttribute('pointer-events', 'none');
+                group.appendChild(circle);
+
+                // 4) 핀 번호 텍스트
+                const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                text.setAttribute('y', '4');
+                text.setAttribute('text-anchor', 'middle');
+                text.setAttribute('fill', isSelected ? '#fde047' : '#ffffff');
+                text.setAttribute('font-size', '12');
+                text.setAttribute('font-weight', '900');
+                text.setAttribute('pointer-events', 'none');
+                text.textContent = isLearned ? `✓${item.id}` : item.id;
+                group.appendChild(text);
+
+                g.appendChild(group);
+            });
+        }
+
+        function selectSpotlight(id, shouldFlipCard = false) {
+            currentSpotlightId = id;
+            learnedIds.add(id); // 탐험 카운트만 올라가고, 바구니(basketIds)에는 절대 자동 추가되지 않음!
+            const item = DOKDO_KEYWORDS.find(k => k.id === id);
+
+            const catEl = document.getElementById('spotlight-category');
+            catEl.textContent = `${item.categoryName} #${item.id}`;
+            catEl.className = `${item.badgeColor} text-white text-xs font-extrabold px-3 py-1 rounded-full border border-slate-800`;
+
+            document.getElementById('spotlight-learned-badge').innerHTML = `<span class="text-teal-700">✅ 탐험 완료!</span>`;
+            document.getElementById('spotlight-icon').innerHTML = item.svg;
+            document.getElementById('spotlight-hashtags').textContent = item.hashtags;
+            document.getElementById('spotlight-title').textContent = item.title;
+            document.getElementById('spotlight-desc').textContent = item.desc;
+            document.getElementById('spotlight-lyric').textContent = `"${item.lyricHint}"`;
+
+            updateSpotlightBasketBtn();
+            renderMapHotspots();
+            updateProgressAndStamps();
+
+            if (shouldFlipCard) {
+                playSound('flip');
+                const cardEl = document.getElementById(`flip-card-${id}`);
+                if (cardEl) {
+                    cardEl.classList.add('flipped');
+                }
+                renderCardsGrid();
+            }
+        }
+
+        function selectNextSpotlight() {
+            const nextId = currentSpotlightId >= DOKDO_KEYWORDS.length ? 1 : currentSpotlightId + 1;
+            selectSpotlight(nextId, true);
+        }
+
+        function updateSpotlightBasketBtn() {
+            const btn = document.getElementById('spotlight-basket-btn');
+            const inBasket = basketIds.includes(currentSpotlightId);
+            if (inBasket) {
+                btn.className = 'retro-btn flex-1 py-3 px-4 rounded-xl font-jua text-base sm:text-lg bg-rose-500 text-white flex items-center justify-center gap-2';
+                btn.innerHTML = '<span>💖 내 작사 바구니에 담김 (클릭 시 빼기)</span>';
+            } else {
+                btn.className = 'retro-btn flex-1 py-3 px-4 rounded-xl font-jua text-base sm:text-lg bg-amber-300 hover:bg-amber-400 text-slate-900 flex items-center justify-center gap-2';
+                btn.innerHTML = '<span>⭐ 내 작사 바구니에 담기</span>';
+            }
+        }
+
+        function toggleBasketFromSpotlight() {
+            toggleBasket(currentSpotlightId);
+        }
+
+        function toggleBasket(id, event) {
+            if (event) event.stopPropagation();
+            const idx = basketIds.indexOf(id);
+            const item = DOKDO_KEYWORDS.find(k => k.id === id);
+
+            if (idx > -1) {
+                basketIds.splice(idx, 1);
+                playSound('flip');
+                showToast(`'${item.title}' 키워드를 바구니에서 뺐습니다.`);
+            } else {
+                if (basketIds.length >= 6) {
+                    playSound('wrong');
+                    showToast('⚠️ 작사 바구니에는 최대 6개까지만 담을 수 있어요!');
+                    return;
+                }
+                basketIds.push(id);
+                playSound('basket');
+                showToast(`⭐ '${item.title}' 키워드를 내 작사 바구니에 담았습니다!`);
+            }
+
+            updateSpotlightBasketBtn();
+            renderCardsGrid();
+            updateProgressAndStamps();
+            renderStep1Basket();
+            updateSongPreview();
+        }
+
+        function clearBasket() {
+            if (basketIds.length === 0) {
+                showToast('현재 작사 바구니가 이미 비어 있습니다.');
+                return;
+            }
+            basketIds = [];
+            playSound('flip');
+            updateSpotlightBasketBtn();
+            renderCardsGrid();
+            updateProgressAndStamps();
+            renderStep1Basket();
+            updateSongPreview();
+            showToast('🗑️ 내 작사 바구니를 모두 비웠습니다.');
+        }
+
+        function filterCards(cat) {
+            currentCategoryFilter = cat;
+            ['all', 'geo', 'his', 'eco', 'heart'].forEach(c => {
+                const btn = document.getElementById(`filter-${c}`);
+                if (c === cat) {
+                    btn.className = 'retro-btn px-4 py-2 rounded-xl font-jua text-sm sm:text-base bg-slate-800 text-white';
+                } else {
+                    btn.className = 'retro-btn px-3.5 py-2 rounded-xl font-jua text-sm sm:text-base bg-white text-slate-800 hover:bg-teal-50';
+                }
+            });
+            playSound('flip');
+            renderCardsGrid();
+        }
+
+        function flipAllCards(toBack) {
+            playSound('flip');
+            DOKDO_KEYWORDS.forEach(item => {
+                if (currentCategoryFilter === 'all' || item.category === currentCategoryFilter) {
+                    const card = document.getElementById(`flip-card-${item.id}`);
+                    if (card) {
+                        if (toBack) {
+                            card.classList.add('flipped');
+                            learnedIds.add(item.id);
+                        } else {
+                            card.classList.remove('flipped');
+                        }
+                    }
+                }
+            });
+            renderMapHotspots();
+            updateProgressAndStamps();
+        }
+
+        function renderCardsGrid() {
+            const grid = document.getElementById('cards-grid');
+            grid.innerHTML = '';
+
+            const filtered = currentCategoryFilter === 'all'
+                ? DOKDO_KEYWORDS
+                : DOKDO_KEYWORDS.filter(k => k.category === currentCategoryFilter);
+
+            filtered.forEach(item => {
+                const isLearned = learnedIds.has(item.id);
+                const inBasket = basketIds.includes(item.id);
+
+                const cardWrap = document.createElement('div');
+                cardWrap.id = `flip-card-${item.id}`;
+                cardWrap.className = `flip-card perspective-1000 h-72 cursor-pointer select-none`;
+                cardWrap.onclick = () => {
+                    cardWrap.classList.toggle('flipped');
+                    selectSpotlight(item.id, false);
+                    playSound('flip');
+                };
+
+                cardWrap.innerHTML = `
+                    <div class="flip-card-inner">
+                        <!-- 카드 앞면 -->
+                        <div class="flip-card-front note-card-sm p-4 flex flex-col justify-between ${item.cardBg}">
+                            <div class="flex items-center justify-between">
+                                <span class="${item.badgeColor} text-white text-xs font-extrabold px-2.5 py-0.5 rounded-full border border-slate-800">
+                                    #${item.id} ${item.categoryName}
+                                </span>
+                                <span class="text-xs font-extrabold ${isLearned ? 'text-teal-700' : 'text-slate-400'}">
+                                    ${isLearned ? '✅ 탐험완료' : '👆 클릭해 뒤집기'}
+                                </span>
+                            </div>
+
+                            <div class="flex flex-col items-center text-center my-auto py-2">
+                                <div class="w-16 h-16 rounded-2xl bg-white border-2 border-slate-800 shadow-[2px_2px_0px_#1e293b] flex items-center justify-center mb-2.5">
+                                    ${item.svg}
+                                </div>
+                                <h4 class="font-jua text-xl text-slate-900">${item.title}</h4>
+                                <p class="text-xs font-bold text-teal-800 mt-1">${item.hashtags}</p>
+                            </div>
+
+                            <div class="flex items-center justify-between pt-2 border-t border-slate-300/80 text-xs">
+                                <span class="font-bold text-slate-500">🔄 뒤집어서 가사 힌트 보기</span>
+                                ${inBasket ? '<span class="bg-rose-500 text-white px-2 py-0.5 rounded-full font-bold">⭐ 바구니 담김</span>' : ''}
+                            </div>
+                        </div>
+
+                        <!-- 카드 뒷면 -->
+                        <div class="flip-card-back note-card-sm p-4 flex flex-col justify-between bg-white">
+                            <div>
+                                <div class="flex items-center justify-between border-b border-slate-200 pb-1.5 mb-2">
+                                    <span class="font-jua text-base text-slate-900">#${item.id} ${item.title}</span>
+                                    <span class="text-[11px] font-bold text-teal-600">📖 핵심 스토리</span>
+                                </div>
+                                <p class="text-xs text-slate-700 leading-relaxed font-medium line-clamp-4">
+                                    ${item.desc}
+                                </p>
+                            </div>
+
+                            <div class="space-y-2">
+                                <div class="bg-amber-50 p-2 rounded-lg border border-amber-400">
+                                    <div class="text-[10px] font-extrabold text-amber-800">🎵 노래 가사 힌트</div>
+                                    <div class="font-jua text-xs sm:text-sm text-slate-900">"${item.lyricHint}"</div>
+                                </div>
+
+                                <button onclick="toggleBasket(${item.id}, event)" class="retro-btn w-full py-1.5 rounded-lg font-jua text-xs sm:text-sm ${inBasket ? 'bg-rose-500 text-white' : 'bg-amber-300 hover:bg-amber-400 text-slate-900'}">
+                                    ${inBasket ? '💖 바구니에 담김 (빼기)' : '⭐ 내 작사 바구니에 담기'}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                grid.appendChild(cardWrap);
+            });
+        }
+
+        /* =========================================================
+           6. [탭 2 - 게임 1] 🌊 파도타기 키워드 바구니 캐치 (Canvas 아케이드)
+        ========================================================= */
+        let waveGameRunning = false;
+        let waveScore = 0;
+        let waveCombo = 0;
+        let waveLives = 3;
+        let waveTimeLeft = 30;
+        let waveTimerInterval = null;
+        let waveAnimId = null;
+
+        const FAKE_BOMBS = [
+            { text: '💣 마라도', reason: '마라도는 제주도 남쪽 끝 섬이에요!' },
+            { text: '💣 하와이', reason: '하와이는 태평양의 섬이에요!' },
+            { text: '💣 남극 펭귄', reason: '독도에는 펭귄 대신 괭이갈매기가 살아요!' },
+            { text: '💣 백두산 호랑이', reason: '독도 바다에는 강치(바다사자)가 살았어요!' },
+            { text: '💣 사막 낙타', reason: '독도는 동해 바다의 화산섬이에요!' }
+        ];
+
+        const boat = {
+            x: 350,
+            y: 390,
+            width: 110,
+            height: 44,
+            speed: 7,
+            moveDir: 0
+        };
+        let fallingItems = [];
+        let floatingEffects = [];
+
+        function switchGameMode(mode) {
+            const waveDiv = document.getElementById('game-container-wave');
+            const quizDiv = document.getElementById('game-container-quiz');
+            const waveBtn = document.getElementById('game-mode-wave');
+            const quizBtn = document.getElementById('game-mode-quiz');
+
+            if (mode === 'wave') {
+                waveDiv.classList.remove('hidden');
+                quizDiv.classList.add('hidden');
+                waveBtn.className = 'retro-btn flex-1 sm:flex-initial px-4 py-2.5 rounded-xl font-jua text-base bg-sky-500 text-white';
+                quizBtn.className = 'retro-btn flex-1 sm:flex-initial px-4 py-2.5 rounded-xl font-jua text-base bg-white text-slate-800 hover:bg-amber-100';
+            } else {
+                waveDiv.classList.add('hidden');
+                quizDiv.classList.remove('hidden');
+                stopWaveGame(false);
+                quizBtn.className = 'retro-btn flex-1 sm:flex-initial px-4 py-2.5 rounded-xl font-jua text-base bg-sky-500 text-white';
+                waveBtn.className = 'retro-btn flex-1 sm:flex-initial px-4 py-2.5 rounded-xl font-jua text-base bg-white text-slate-800 hover:bg-amber-100';
+            }
+            playSound('flip');
+        }
+
+        function setBoatMove(dir) {
+            boat.moveDir = dir;
+        }
+
+        function initWaveCanvasControls() {
+            const canvas = document.getElementById('wave-canvas');
+            canvas.width = 800;
+            canvas.height = 460;
+
+            // 키보드 이벤트
+            window.addEventListener('keydown', e => {
+                if (!waveGameRunning) return;
+                if (e.key === 'ArrowLeft') boat.moveDir = -1;
+                if (e.key === 'ArrowRight') boat.moveDir = 1;
+            });
+            window.addEventListener('keyup', e => {
+                if (e.key === 'ArrowLeft' && boat.moveDir === -1) boat.moveDir = 0;
+                if (e.key === 'ArrowRight' && boat.moveDir === 1) boat.moveDir = 0;
+            });
+
+            // 마우스/터치 드래그 이동
+            const handlePointerMove = (clientX) => {
+                if (!waveGameRunning) return;
+                const rect = canvas.getBoundingClientRect();
+                const relX = ((clientX - rect.left) / rect.width) * canvas.width;
+                boat.x = Math.max(10, Math.min(canvas.width - boat.width - 10, relX - boat.width / 2));
+            };
+
+            canvas.addEventListener('mousemove', e => handlePointerMove(e.clientX));
+            canvas.addEventListener('touchmove', e => {
+                if (e.touches.length > 0) {
+                    handlePointerMove(e.touches[0].clientX);
+                }
+            }, { passive: true });
+        }
+
+        function startWaveGame() {
+            waveGameRunning = true;
+            waveScore = 0;
+            waveCombo = 0;
+            waveLives = 3;
+            waveTimeLeft = 30;
+            fallingItems = [];
+            floatingEffects = [];
+            boat.x = 345;
+
+            document.getElementById('wave-overlay').classList.add('hidden');
+            updateWaveHUD();
+            playSound('coin');
+
+            if (waveTimerInterval) clearInterval(waveTimerInterval);
+            waveTimerInterval = setInterval(() => {
+                waveTimeLeft--;
+                updateWaveHUD();
+                if (waveTimeLeft <= 0) {
+                    stopWaveGame(true);
+                }
+            }, 1000);
+
+            if (waveAnimId) cancelAnimationFrame(waveAnimId);
+            waveGameLoop();
+        }
+
+        function stopWaveGame(finishedNormally) {
+            waveGameRunning = false;
+            if (waveTimerInterval) clearInterval(waveTimerInterval);
+            if (waveAnimId) cancelAnimationFrame(waveAnimId);
+
+            if (!finishedNormally) return;
+
+            const overlay = document.getElementById('wave-overlay');
+            const titleEl = document.getElementById('wave-overlay-title');
+            const descEl = document.getElementById('wave-overlay-desc');
+            overlay.classList.remove('hidden');
+
+            if (waveScore >= 100) {
+                titleEl.textContent = `🎉 대성공! 최종 점수 ${waveScore}점!`;
+                descEl.innerHTML = `멋져요! 진짜 독도 키워드를 정확히 구별해 냈군요!<br>보상으로 <b>[🏆 독도 수호자 스탬프]</b>를 획득했습니다!`;
+                if (!stamps.gamer) {
+                    stamps.gamer = true;
+                    unlockStampUI(2, '🏆 [독도 수호자 스탬프] 획득! (미니게임 클리어)');
+                    updateProgressAndStamps();
+                } else {
+                    playSound('fanfare');
+                }
+            } else {
+                titleEl.textContent = `아쉬워요! 최종 점수 ${waveScore}점`;
+                descEl.innerHTML = `100점 이상을 달성하면 스탬프를 받을 수 있어요.<br>가짜 폭탄을 피해서 다시 한 번 도전해 볼까요?`;
+                playSound('wrong');
+            }
+        }
+
+        function updateWaveHUD() {
+            document.getElementById('wave-hearts').textContent = '❤️'.repeat(Math.max(0, waveLives)) + '🖤'.repeat(Math.max(0, 3 - waveLives));
+            document.getElementById('wave-score').textContent = waveScore;
+            document.getElementById('wave-combo').textContent = waveCombo >= 2 ? `(${waveCombo} COMBO!)` : '';
+            document.getElementById('wave-timer').textContent = waveTimeLeft;
+        }
+
+        function spawnWaveItem() {
+            const mission = document.getElementById('wave-mission-select').value;
+            const isFakeBomb = Math.random() < 0.34;
+
+            let label = '';
+            let isCorrectTarget = true;
+
+            if (isFakeBomb) {
+                const bomb = FAKE_BOMBS[Math.floor(Math.random() * FAKE_BOMBS.length)];
+                label = bomb.text;
+                isCorrectTarget = false;
+            } else {
+                const kw = DOKDO_KEYWORDS[Math.floor(Math.random() * DOKDO_KEYWORDS.length)];
+                if (mission === 'all') {
+                    label = `⭕ ${kw.title}`;
+                    isCorrectTarget = true;
+                } else {
+                    isCorrectTarget = (kw.category === mission);
+                    label = isCorrectTarget ? `⭐ ${kw.title}` : `🌀 ${kw.title}`;
+                }
+            }
+
+            fallingItems.push({
+                x: 60 + Math.random() * 680,
+                y: -30,
+                radius: 30,
+                speed: 2.3 + Math.random() * 1.8,
+                label,
+                isCorrectTarget
+            });
+        }
+
+        function waveGameLoop() {
+            if (!waveGameRunning) return;
+            const canvas = document.getElementById('wave-canvas');
+            const ctx = canvas.getContext('2d');
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // 배경 독도 실루엣 & 파도 그리기
+            ctx.fillStyle = 'rgba(13, 148, 136, 0.22)';
+            ctx.beginPath();
+            ctx.moveTo(520, 420);
+            ctx.lineTo(570, 290);
+            ctx.lineTo(640, 420);
+            ctx.moveTo(650, 420);
+            ctx.lineTo(700, 310);
+            ctx.lineTo(760, 420);
+            ctx.fill();
+
+            // 보트 이동
+            if (boat.moveDir !== 0) {
+                boat.x += boat.moveDir * boat.speed;
+                boat.x = Math.max(10, Math.min(canvas.width - boat.width - 10, boat.x));
+            }
+
+            // 아이템 스폰
+            if (Math.random() < 0.038) {
+                spawnWaveItem();
+            }
+
+            // 아이템 이동 및 충돌 체크
+            for (let i = fallingItems.length - 1; i >= 0; i--) {
+                const it = fallingItems[i];
+                it.y += it.speed;
+
+                // 캡슐 방울 그리기
+                ctx.save();
+                ctx.font = 'bold 14px "Noto Sans KR", sans-serif';
+                const textW = ctx.measureText(it.label).width + 26;
+                const boxH = 36;
+                const boxX = it.x - textW / 2;
+                const boxY = it.y - boxH / 2;
+
+                ctx.fillStyle = it.isCorrectTarget ? '#fef9c3' : '#ffe4e6';
+                ctx.strokeStyle = '#1e293b';
+                ctx.lineWidth = 2.5;
+                ctx.beginPath();
+                ctx.roundRect(boxX, boxY, textW, boxH, 18);
+                ctx.fill();
+                ctx.stroke();
+
+                ctx.fillStyle = '#0f172a';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(it.label, it.x, it.y);
+                ctx.restore();
+
+                // 보트와 충돌 판정
+                const hitX = it.x >= boat.x - 15 && it.x <= boat.x + boat.width + 15;
+                const hitY = it.y + 18 >= boat.y && it.y - 18 <= boat.y + boat.height;
+
+                if (hitX && hitY) {
+                    if (it.isCorrectTarget) {
+                        waveCombo++;
+                        const pts = 20 + (waveCombo > 1 ? waveCombo * 2 : 0);
+                        waveScore += pts;
+                        playSound('coin');
+                        floatingEffects.push({ x: it.x, y: boat.y - 10, text: `+${pts}점!`, color: '#fde047', alpha: 1 });
+                    } else {
+                        waveCombo = 0;
+                        waveLives--;
+                        playSound('wrong');
+                        floatingEffects.push({ x: it.x, y: boat.y - 10, text: `오답! 💔`, color: '#fb7185', alpha: 1 });
+                        if (waveLives <= 0) {
+                            updateWaveHUD();
+                            stopWaveGame(true);
+                            return;
+                        }
+                    }
+                    updateWaveHUD();
+                    fallingItems.splice(i, 1);
+                    continue;
+                }
+
+                if (it.y > canvas.height + 40) {
+                    fallingItems.splice(i, 1);
+                }
+            }
+
+            // 독도 수호 보트 그리기
+            ctx.save();
+            ctx.fillStyle = '#f59e0b';
+            ctx.strokeStyle = '#1e293b';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.moveTo(boat.x, boat.y);
+            ctx.lineTo(boat.x + boat.width, boat.y);
+            ctx.lineTo(boat.x + boat.width - 16, boat.y + boat.height);
+            ctx.lineTo(boat.x + 16, boat.y + boat.height);
+            ctx.closePath();
+            ctx.fill();
+            ctx.stroke();
+
+            ctx.fillStyle = '#ffffff';
+            ctx.font = 'bold 14px "Jua", sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText('🇰🇷 독도수호호', boat.x + boat.width / 2, boat.y + 26);
+            ctx.restore();
+
+            // 점수 플로팅 이펙트
+            for (let i = floatingEffects.length - 1; i >= 0; i--) {
+                const ef = floatingEffects[i];
+                ef.y -= 1.5;
+                ef.alpha -= 0.025;
+                ctx.save();
+                ctx.globalAlpha = Math.max(0, ef.alpha);
+                ctx.font = 'bold 18px "Jua", sans-serif';
+                ctx.fillStyle = ef.color;
+                ctx.strokeStyle = '#1e293b';
+                ctx.lineWidth = 3;
+                ctx.strokeText(ef.text, ef.x, ef.y);
+                ctx.fillText(ef.text, ef.x, ef.y);
+                ctx.restore();
+                if (ef.alpha <= 0) floatingEffects.splice(i, 1);
+            }
+
+            waveAnimId = requestAnimationFrame(waveGameLoop);
+        }
+
+        /* =========================================================
+           7. [탭 2 - 게임 2] ⚡ 독도 골든벨 스피드 퀴즈 & 8조각 퍼즐
+           * 핵심 수정: 오답 선택 시 즉시 넘어가지 않고 다시 풀 수 있는 기회 부여!
+        ========================================================= */
+        const QUIZ_QUESTIONS = [
+            {
+                q: 'Q1. 독도는 외로운 하나의 섬이 아니라, 큰 섬 2개와 89개의 바위섬으로 이루어져 있습니다. 두 개의 큰 섬 이름은 무엇일까요?',
+                options: ['동도와 서도', '남도와 북도', '청도와 백도', '상도와 하도'],
+                answer: 0,
+                hint: '힌트: 동쪽에 있는 섬과 서쪽에 있는 섬이라는 뜻이에요!',
+                exp: '독도는 동쪽의 동도(東島)와 서쪽의 서도(西島), 그리고 89개의 부속 도서로 이루어진 화산섬입니다!'
+            },
+            {
+                q: 'Q2. 1900년 10월 25일, 대한제국 고종 황제가 "독도를 울도군(울릉도)이 관할한다"고 반포하여 오늘날 독도의 날 유래가 된 문서는?',
+                options: ['대한제국 칙령 제41호', '훈민정음 해례본', '삼국사기 우산국편', '강화도 조약'],
+                answer: 0,
+                hint: '힌트: 고종 황제가 내린 마흔한 번째 황실 명령(칙령)이에요!',
+                exp: '1900년 10월 25일 반포된 대한제국 칙령 제41호를 기념하여 매년 10월 25일을 독도의 날로 지정했습니다.'
+            },
+            {
+                q: 'Q3. 조선 숙종 때 어부로서 일본에 두 차례나 건너가 "울릉도와 독도는 조선의 땅"임을 당당하게 밝히고 문서를 받아온 인물은?',
+                options: ['안용복', '장보고', '이순신', '김정호'],
+                answer: 0,
+                hint: '힌트: "안" 씨 성을 가진 조선 시대의 용감한 어부이자 민간 외교관이에요!',
+                exp: '안용복은 조선 숙종 시기 독도와 울릉도를 침범한 왜인들을 몰아내고 우리 영토임을 확인받은 자랑스러운 민간 외교관입니다.'
+            },
+            {
+                q: 'Q4. 한때 독도 바다에 수만 마리가 살았으나 일제강점기 무자비한 남획으로 사라진 바다사자과 동물로, 우리가 꼭 기억해야 할 친구는?',
+                options: ['독도 강치', '남극 펭귄', '점박이물범', '북극곰'],
+                answer: 0,
+                hint: '힌트: 가제바위에서 무리 지어 살던 바다사자의 우리말 이름이에요!',
+                exp: '독도 가제바위 등을 가득 메웠던 독도 강치(바다사자)는 우리가 잊지 말아야 할 독도 생태계의 아픈 역사입니다.'
+            },
+            {
+                q: 'Q5. [OX 퀴즈] 날씨가 맑은 날에는 울릉도에서 안경이나 망원경 없이 맨눈으로도 독도를 볼 수 있다!',
+                options: ['⭕ 맞다 (O)', '❌ 아니다 (X)'],
+                answer: 0,
+                hint: '힌트: 세종실록지리지에도 "날씨가 맑으면 서로 바라볼 수 있다"고 기록되어 있어요!',
+                exp: '울릉도와 독도는 87.4km 떨어져 있어 맑은 날에는 울릉도에서 맨눈으로도 독도가 뚜렷이 보입니다!'
+            },
+            {
+                q: 'Q6. 독도 깊은 바다 밑에 묻혀 있는 미래 청정 에너지 자원으로, 불을 붙이면 타올라 "불타는 얼음"이라 불리는 보물은?',
+                options: ['메탄하이드레이트', '석탄과 석유', '우라늄 원석', '천일염 소금'],
+                answer: 0,
+                hint: '힌트: "메탄" 가스가 얼음처럼 굳어 있는 미래 에너지원이에요!',
+                exp: '메탄하이드레이트는 독도 심해에 매장된 미래 청정 에너지 자원으로 "불타는 얼음"이라는 별명을 가지고 있어요.'
+            },
+            {
+                q: 'Q7. 1950년대 홍순칠 대장을 중심으로 울릉도 청년 33명이 스스로 결성하여 독도를 온몸으로 지켜낸 민간 수비대의 이름은?',
+                options: ['독도의용수비대', '독도탐험대', '우산국수호단', '동해해양경찰'],
+                answer: 0,
+                hint: '힌트: 의로운 마음으로 용감하게 독도를 수비한 대원들이라는 뜻이에요!',
+                exp: '33인의 독도의용수비대 영웅들이 독도를 지켜낸 덕분에 오늘날 독도경비대가 그 정신을 이어받고 있습니다.'
+            },
+            {
+                q: 'Q8. 거센 바닷바람을 이겨내고 독도에서 100년 넘게 살아남아 천연기념물 제538호로 지정된 나무는 무엇일까요?',
+                options: ['독도 사철나무', '독도 소나무', '독도 은행나무', '독도 단풍나무'],
+                answer: 0,
+                hint: '힌트: 사계절(사철) 내내 푸른 잎을 자랑하는 나무예요!',
+                exp: '독도 사철나무는 독도에서 가장 오래된 나무로 강인한 생명력을 상징하는 천연기념물입니다!'
+            }
+        ];
+
+        let currentQuizIdx = 0;
+        let quizSolvedCount = 0;
+
+        function initQuizGame() {
+            currentQuizIdx = 0;
+            quizSolvedCount = 0;
+            document.getElementById('quiz-correct-count').textContent = '0';
+
+            const puzzleGrid = document.getElementById('quiz-puzzle-grid');
+            puzzleGrid.innerHTML = '';
+            for (let i = 0; i < 8; i++) {
+                const tile = document.createElement('div');
+                tile.id = `puzzle-tile-${i}`;
+                tile.className = 'bg-teal-700 border border-teal-500 flex flex-col items-center justify-center text-white font-jua transition-all duration-500';
+                tile.innerHTML = `<span class="text-lg">🔒</span><span class="text-xs">조각 ${i + 1}</span>`;
+                puzzleGrid.appendChild(tile);
+            }
+
+            renderQuizQuestion();
+        }
+
+        function renderQuizQuestion() {
+            const qObj = QUIZ_QUESTIONS[currentQuizIdx];
+            document.getElementById('quiz-step-badge').textContent = `QUESTION ${currentQuizIdx + 1} / ${QUIZ_QUESTIONS.length}`;
+            document.getElementById('quiz-question-text').textContent = qObj.q;
+            document.getElementById('quiz-feedback-box').classList.add('hidden');
+            document.getElementById('quiz-retry-hint-box').classList.add('hidden');
+
+            const nextBtn = document.getElementById('quiz-next-btn');
+            nextBtn.textContent = currentQuizIdx === QUIZ_QUESTIONS.length - 1 ? '🎊 골든벨 완료 확인하기!' : '다음 문제로 ➔';
+
+            const optGrid = document.getElementById('quiz-options-grid');
+            optGrid.innerHTML = '';
+
+            // 보기 순서를 섞되 정답 여부를 보존
+            const indexedOptions = qObj.options.map((text, idx) => ({ text, isCorrect: idx === qObj.answer }));
+            if (indexedOptions.length > 2) {
+                indexedOptions.sort(() => Math.random() - 0.5);
+            }
+
+            indexedOptions.forEach((opt) => {
+                const btn = document.createElement('button');
+                btn.className = 'retro-btn p-3.5 rounded-xl font-jua text-base bg-white hover:bg-amber-100 text-slate-800 text-left flex items-center justify-between gap-2';
+                btn.innerHTML = `<span class="flex items-center gap-2"><span>👉</span> <span>${opt.text}</span></span> <span class="status-tag text-xs"></span>`;
+                btn.onclick = () => checkQuizAnswer(opt.isCorrect, btn, qObj);
+                optGrid.appendChild(btn);
+            });
+        }
+
+        function checkQuizAnswer(isCorrect, clickedBtn, qObj) {
+            const retryBox = document.getElementById('quiz-retry-hint-box');
+            const retryText = document.getElementById('quiz-retry-hint-text');
+            const fbBox = document.getElementById('quiz-feedback-box');
+            const fbTitle = document.getElementById('quiz-feedback-title');
+            const fbDesc = document.getElementById('quiz-feedback-desc');
+
+            if (isCorrect) {
+                // 정답 선택 시 모든 버튼 비활성화 후 퍼즐 오픈
+                const allBtns = document.querySelectorAll('#quiz-options-grid button');
+                allBtns.forEach(b => b.disabled = true);
+
+                retryBox.classList.add('hidden');
+                fbBox.classList.remove('hidden');
+                fbDesc.textContent = qObj.exp;
+
+                clickedBtn.className = 'retro-btn p-3.5 rounded-xl font-jua text-base bg-emerald-500 text-white text-left flex items-center justify-between gap-2';
+                clickedBtn.querySelector('.status-tag').textContent = '⭕ 정답!';
+                fbTitle.textContent = '🎉 정답입니다! 독도 퍼즐 조각이 열렸어요!';
+                fbTitle.className = 'font-jua text-lg text-teal-800';
+                playSound('coin');
+
+                // 퍼즐 조각 오픈
+                const tile = document.getElementById(`puzzle-tile-${currentQuizIdx}`);
+                if (tile && !tile.classList.contains('opacity-0')) {
+                    tile.classList.add('opacity-0', 'scale-75');
+                    quizSolvedCount++;
+                    document.getElementById('quiz-correct-count').textContent = quizSolvedCount;
+                }
+
+                if (quizSolvedCount >= 6 && !stamps.gamer) {
+                    stamps.gamer = true;
+                    unlockStampUI(2, '🏆 [독도 수호자 스탬프] 획득! (골든벨 퀴즈 통과)');
+                    updateProgressAndStamps();
+                }
+            } else {
+                // 오답 선택 시: 해당 오답 버튼만 비활성화하고 즉시 다시 풀 수 있도록 힌트 제공!
+                clickedBtn.disabled = true;
+                clickedBtn.className = 'p-3.5 rounded-xl font-jua text-base bg-rose-100 text-rose-400 border-2 border-rose-300 text-left flex items-center justify-between gap-2 opacity-75 cursor-not-allowed';
+                clickedBtn.querySelector('.status-tag').textContent = '❌ 다시 도전!';
+
+                retryBox.classList.remove('hidden');
+                retryText.textContent = `💡 아쉬워요! ${qObj.hint} 다른 보기를 골라 다시 풀어보세요!`;
+                playSound('wrong');
+            }
+        }
+
+        function nextQuizQuestion() {
+            if (currentQuizIdx < QUIZ_QUESTIONS.length - 1) {
+                currentQuizIdx++;
+                playSound('flip');
+                renderQuizQuestion();
+            } else {
+                playSound('fanfare');
+                showToast(`🎊 축하합니다! 독도 골든벨 8문제를 모두 해결하여 퍼즐을 완성했어요!`);
+            }
+        }
+
+        /* =========================================================
+           8. [탭 3] 🎵 나만의 독도지킴이 노래 설계도 ('다시 쓰기' 5종 버전 생성기)
+        ========================================================= */
+        function setActiveLyricField(fieldId) {
+            activeLyricFieldId = fieldId;
+        }
+
+        function renderStep1Basket() {
+            const chipContainer = document.getElementById('step1-basket-chips');
+            const allPicker = document.getElementById('step1-all-keywords-picker');
+            document.getElementById('step1-count').textContent = basketIds.length;
+
+            chipContainer.innerHTML = '';
+            if (basketIds.length === 0) {
+                chipContainer.innerHTML = `<span class="text-xs text-slate-500 font-medium">아직 내가 담은 키워드가 없습니다 (0개). 1차시 도감에서 직접 담거나 아래 목록에서 클릭해 담아보세요!</span>`;
+            } else {
+                basketIds.forEach(id => {
+                    const kw = DOKDO_KEYWORDS.find(k => k.id === id);
+                    const chipWrap = document.createElement('div');
+                    chipWrap.className = 'retro-btn px-2.5 py-1.5 rounded-xl bg-amber-200 text-slate-900 text-xs font-bold flex items-center gap-1.5';
+
+                    const insertBtn = document.createElement('button');
+                    insertBtn.className = 'flex items-center gap-1 hover:underline';
+                    insertBtn.title = `클릭하면 "${kw.lyricHint}" 문장이 현재 선택된 가사 칸에 추가됩니다!`;
+                    insertBtn.innerHTML = `<span>🎵 ${kw.title}</span> <span class="text-[10px] bg-white px-1.5 py-0.5 rounded border border-slate-700">+가사넣기</span>`;
+                    insertBtn.onclick = () => insertLyricHintToField(kw);
+
+                    const removeBtn = document.createElement('button');
+                    removeBtn.className = 'ml-1 w-5 h-5 rounded-full bg-rose-500 text-white text-[10px] font-black flex items-center justify-center hover:bg-rose-600';
+                    removeBtn.title = '바구니에서 빼기';
+                    removeBtn.textContent = '✕';
+                    removeBtn.onclick = (e) => toggleBasket(kw.id, e);
+
+                    chipWrap.appendChild(insertBtn);
+                    chipWrap.appendChild(removeBtn);
+                    chipContainer.appendChild(chipWrap);
+                });
+            }
+
+            // 전체 16개 키워드 미니 토글 버튼
+            allPicker.innerHTML = '';
+            DOKDO_KEYWORDS.forEach(kw => {
+                const inBasket = basketIds.includes(kw.id);
+                const btn = document.createElement('button');
+                btn.className = `px-2.5 py-1.5 rounded-lg border-2 border-slate-800 text-xs font-bold transition ${inBasket ? 'bg-rose-500 text-white' : 'bg-white text-slate-700 hover:bg-teal-50'}`;
+                btn.textContent = `${inBasket ? '✓ 담김: ' : '+ 담기: '}${kw.title}`;
+                btn.onclick = () => toggleBasket(kw.id);
+                allPicker.appendChild(btn);
+            });
+        }
+
+        function insertLyricHintToField(kw) {
+            const field = document.getElementById(activeLyricFieldId);
+            if (!field) return;
+            const currentVal = field.value.trim();
+            field.value = currentVal ? `${currentVal}\n${kw.lyricHint}` : kw.lyricHint;
+            playSound('coin');
+            showToast(`✨ [${kw.title}]의 가사 힌트가 입력되었습니다!`);
+            updateSongPreview();
+        }
+
+        function fillRandomKeywords() {
+            const shuffled = [...DOKDO_KEYWORDS].sort(() => Math.random() - 0.5);
+            basketIds = shuffled.slice(0, 5).map(k => k.id);
+            playSound('basket');
+            updateSpotlightBasketBtn();
+            renderStep1Basket();
+            renderCardsGrid();
+            updateProgressAndStamps();
+            updateSongPreview();
+            showToast('🎲 추천 독도 키워드 5개가 바구니에 담겼습니다!');
+        }
+
+        function renderGenreSelector() {
+            const grid = document.getElementById('genre-selector-grid');
+            grid.innerHTML = '';
+            SUNO_GENRES.forEach(g => {
+                const isSelected = g.id === selectedGenreId;
+                const btn = document.createElement('button');
+                btn.className = `retro-btn p-3 rounded-xl text-left transition ${isSelected ? 'bg-teal-500 text-white' : 'bg-white text-slate-800 hover:bg-teal-50'}`;
+                btn.innerHTML = `
+                    <div class="font-jua text-base">${g.name}</div>
+                    <div class="text-xs ${isSelected ? 'text-teal-100' : 'text-slate-500'} mt-0.5">${g.desc}</div>
+                `;
+                btn.onclick = () => {
+                    selectedGenreId = g.id;
+                    playSound('flip');
+                    renderGenreSelector();
+                    updateSongPreview();
+                };
+                grid.appendChild(btn);
+            });
+        }
+
+        function renderTemplateButtons() {
+            const container = document.getElementById('lyric-template-buttons');
+            if (!container) return;
+            container.innerHTML = '';
+
+            LYRIC_TEMPLATES.forEach((tpl, idx) => {
+                const isSelected = idx === currentTemplateIdx;
+                const btn = document.createElement('button');
+                btn.className = `retro-btn py-2 px-2 rounded-lg font-jua text-xs sm:text-sm text-center transition ${isSelected ? 'bg-slate-900 text-amber-300' : 'bg-white text-slate-800 hover:bg-amber-100'}`;
+                btn.innerHTML = `<div>${tpl.code}</div><div class="text-[11px] font-sans font-bold ${isSelected ? 'text-white' : 'text-slate-500'}">${tpl.shortName}</div>`;
+                btn.onclick = () => {
+                    currentTemplateIdx = idx;
+                    rewriteFullLyrics(false);
+                };
+                container.appendChild(btn);
+            });
+
+            const badge = document.getElementById('current-template-badge');
+            if (badge) {
+                badge.textContent = `${LYRIC_TEMPLATES[currentTemplateIdx].code} (${LYRIC_TEMPLATES[currentTemplateIdx].shortName}) 적용 중`;
+            }
+        }
+
+        // 바구니에 담긴 키워드(없으면 기본 키워드 참조하되 바구니에 멋대로 넣지는 않음!)를 5개 슬롯으로 반환
+        function getWorkingKeywordsForLyrics() {
+            const sourceIds = basketIds.length > 0 ? [...basketIds] : [1, 5, 6, 9, 16];
+            const result = [];
+            for (let i = 0; i < 5; i++) {
+                const id = sourceIds[i % sourceIds.length];
+                result.push(DOKDO_KEYWORDS.find(k => k.id === id));
+            }
+            return result;
+        }
+
+        // 전체 가사 생성 / 다른 버전으로 다시 쓰기
+        function rewriteFullLyrics(advanceVersion = true) {
+            if (advanceVersion) {
+                currentTemplateIdx = (currentTemplateIdx + 1) % LYRIC_TEMPLATES.length;
+            }
+            const tpl = LYRIC_TEMPLATES[currentTemplateIdx];
+            const kws = getWorkingKeywordsForLyrics();
+
+            // 제목도 스타일에 어울리게 업데이트
+            const titleChoice = tpl.titles[Math.floor(Math.random() * tpl.titles.length)];
+            document.getElementById('song-title').value = titleChoice;
+
+            document.getElementById('lyrics-verse1').value = tpl.buildVerse1(kws).join('\n');
+            document.getElementById('lyrics-chorus').value = tpl.buildChorus(kws).join('\n');
+            document.getElementById('lyrics-verse2').value = tpl.buildVerse2(kws).join('\n');
+
+            // 장르도 해당 템플릿과 어울리는 장르로 자동 매칭
+            selectedGenreId = tpl.matchedGenre;
+            renderGenreSelector();
+            renderTemplateButtons();
+            updateSongPreview();
+
+            playSound('fanfare');
+            if (basketIds.length === 0) {
+                showToast(`🔄 [${tpl.code}: ${tpl.shortName}] 스타일로 예시 가사를 작성했어요! (바구니에 내 키워드를 담으면 내 키워드로 작사됩니다)`);
+            } else {
+                showToast(`🔄 내가 담은 키워드(${basketIds.length}개)로 [${tpl.code}: ${tpl.shortName}] 가사를 새로 썼어요!`);
+            }
+        }
+
+        // [1절], [후렴구], [2절] 개별 구간만 다른 표현으로 다시 쓰기
+        function rewriteSectionOnly(sectionKey) {
+            sectionVariationCounter[sectionKey] = (sectionVariationCounter[sectionKey] + 1) % LYRIC_TEMPLATES.length;
+            const tplIdx = (currentTemplateIdx + sectionVariationCounter[sectionKey]) % LYRIC_TEMPLATES.length;
+            const tpl = LYRIC_TEMPLATES[tplIdx];
+
+            // 키워드 순서도 살짝 섞어서 새로운 문장 조합 생성
+            const baseKws = getWorkingKeywordsForLyrics();
+            const rotatedKws = [...baseKws.slice(sectionVariationCounter[sectionKey] % 5), ...baseKws.slice(0, sectionVariationCounter[sectionKey] % 5)];
+
+            if (sectionKey === 'verse1') {
+                document.getElementById('lyrics-verse1').value = tpl.buildVerse1(rotatedKws).join('\n');
+                showToast(`🎲 [1절]을 ${tpl.code}(${tpl.shortName}) 표현으로 다시 썼어요!`);
+            } else if (sectionKey === 'chorus') {
+                document.getElementById('lyrics-chorus').value = tpl.buildChorus(rotatedKws).join('\n');
+                showToast(`🎲 [후렴구]를 ${tpl.code}(${tpl.shortName}) 표현으로 다시 썼어요!`);
+            } else if (sectionKey === 'verse2') {
+                document.getElementById('lyrics-verse2').value = tpl.buildVerse2(rotatedKws).join('\n');
+                showToast(`🎲 [2절]을 ${tpl.code}(${tpl.shortName}) 표현으로 다시 썼어요!`);
+            }
+
+            playSound('coin');
+            updateSongPreview();
+        }
+
+        function updateSongPreview() {
+            const author = document.getElementById('song-author').value.trim() || '자랑스러운 독도지킴이';
+            const title = document.getElementById('song-title').value.trim() || '나만의 독도지킴이 송';
+            const v1 = document.getElementById('lyrics-verse1').value.trim();
+            const ch = document.getElementById('lyrics-chorus').value.trim();
+            const v2 = document.getElementById('lyrics-verse2').value.trim();
+
+            document.getElementById('preview-song-author').textContent = author;
+            document.getElementById('preview-song-title').textContent = title;
+
+            // 키워드 뱃지 렌더링
+            const kwListEl = document.getElementById('preview-keywords-list');
+            kwListEl.innerHTML = '';
+            if (basketIds.length === 0) {
+                kwListEl.innerHTML = `<span class="text-xs text-slate-400">아직 바구니에 담은 키워드가 없어요 (STEP 1에서 골라보세요)</span>`;
+            } else {
+                basketIds.forEach(id => {
+                    const kw = DOKDO_KEYWORDS.find(k => k.id === id);
+                    const span = document.createElement('span');
+                    span.className = 'bg-white border border-slate-800 px-2 py-0.5 rounded-md text-xs font-bold text-teal-900';
+                    span.textContent = `#${kw.title}`;
+                    kwListEl.appendChild(span);
+                });
+            }
+
+            // 장르 프롬프트
+            const genreObj = SUNO_GENRES.find(g => g.id === selectedGenreId) || SUNO_GENRES[0];
+            document.getElementById('preview-genre-kr').textContent = genreObj.name;
+            document.getElementById('preview-style-prompt').textContent = genreObj.prompt;
+
+            // 구조화된 Suno 가사 포맷
+            const formattedLyrics = `[Verse 1]\n${v1 || '(1절 가사를 입력하거나 위의 [가사 다시 쓰기] 버튼을 눌러보세요)'}\n\n[Chorus]\n${ch || '(후렴구 가사를 입력해 주세요)'}\n\n[Verse 2]\n${v2 || '(2절 가사를 입력해 주세요)'}\n\n[Chorus]\n${ch || '(후렴구 반복)'}\n\n[Outro]\n영원히 기억해 10월 25일 우리의 독도!`;
+            document.getElementById('preview-lyrics-full').textContent = formattedLyrics;
+
+            // 가사가 일정 수준 채워지면 스탬프 3 지급
+            if (v1.length > 10 && ch.length > 10 && !stamps.composer) {
+                stamps.composer = true;
+                unlockStampUI(3, '🎵 [AI 작사가 스탬프] 획득! (나만의 독도 노래 설계 완성)');
+                updateProgressAndStamps();
+            }
+        }
+
+        /* 클립보드 복사 유틸리티 (iFrame 환경 호환) */
+        function copyTextToClipboard(text, successMsg) {
+            const ta = document.createElement('textarea');
+            ta.value = text;
+            ta.style.position = 'fixed';
+            ta.style.left = '-9999px';
+            document.body.appendChild(ta);
+            ta.select();
+            try {
+                document.execCommand('copy');
+                playSound('coin');
+                showToast(successMsg);
+            } catch (err) {
+                showToast('복사에 실패했습니다. 텍스트를 직접 드래그해 복사해 주세요.');
+            }
+            document.body.removeChild(ta);
+        }
+
+        function copySunoStyleOnly() {
+            const styleText = document.getElementById('preview-style-prompt').textContent;
+            copyTextToClipboard(styleText, '📋 Suno [Style of Music] 영어 프롬프트가 복사되었습니다!');
+        }
+
+        function copySunoLyricsOnly() {
+            const lyricsText = document.getElementById('preview-lyrics-full').textContent;
+            copyTextToClipboard(lyricsText, '🎤 Suno [Lyrics] 가사가 클립보드에 복사되었습니다!');
+        }
+
+        function copyFullSunoPrompt() {
+            const title = document.getElementById('preview-song-title').textContent;
+            const author = document.getElementById('preview-song-author').textContent;
+            const style = document.getElementById('preview-style-prompt').textContent;
+            const lyrics = document.getElementById('preview-lyrics-full').textContent;
+
+            const fullText = `=== [나만의 독도지킴이 노래 설계도] ===\n• 제목(Title): ${title}\n• 작사가: ${author}\n\n[1. Suno AI - Style of Music 입력용]\n${style}\n\n[2. Suno AI - Lyrics 입력용]\n${lyrics}`;
+            copyTextToClipboard(fullText, '🎉 Suno AI용 전체 설계도(Style + Lyrics)가 복사되었습니다!');
+        }
+
+        function openSunoGuideModal() {
+            document.getElementById('suno-guide-modal').classList.remove('hidden');
+            playSound('flip');
+        }
+
+        function closeSunoGuideModal() {
+            document.getElementById('suno-guide-modal').classList.add('hidden');
+        }
+
+        /* =========================================================
+           9. 초기 구동 (window.onload)
+           * 초기 바구니는 0개로 깨끗하게 시작하며, 임의로 키워드를 담지 않음
+        ========================================================= */
+        window.onload = function () {
+            selectSpotlight(1, false);
+            renderCardsGrid();
+            initWaveCanvasControls();
+            initQuizGame();
+            renderGenreSelector();
+            renderStep1Basket();
+            renderTemplateButtons();
+            updateSongPreview();
+            updateProgressAndStamps();
+        };
+    </script>
+</body>
+</html>
